@@ -16,6 +16,7 @@ Montador interativo de grade semanal para Engenharia de Computação da UABJ.
 - modo escuro;
 - autosave no navegador;
 - exportação e importação do progresso em arquivo separado.
+- compartilhamento permanente da grade por código numérico de cinco dígitos.
 
 ## Uso local
 

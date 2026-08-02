@@ -372,6 +372,169 @@ input:focus-visible,
   gap: 7px;
 }
 
+.cloud-sharing {
+  display: grid;
+  gap: 10px;
+  margin: 0 12px 14px 0;
+  padding: 12px;
+  border: 1px solid #cddfc2;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #f7fbf1, #f0f7e7);
+}
+
+.cloud-sharing-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cloud-sharing-copy > div {
+  min-width: 0;
+}
+
+.cloud-sharing-copy strong {
+  display: block;
+  color: #263b25;
+  font-size: 12px;
+}
+
+.cloud-sharing-copy p {
+  margin: 4px 0 0;
+  color: #63725d;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.cloud-badge {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: #3e6319;
+  background: #dff0c8;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cloud-create-button,
+.cloud-code-form button,
+.generated-code button {
+  border: 1px solid #92ad70;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #547c29;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.cloud-create-button {
+  width: 100%;
+  padding: 9px 10px;
+}
+
+.cloud-create-button:hover,
+.cloud-code-form button:hover,
+.generated-code button:hover {
+  background: #42681e;
+}
+
+.cloud-create-button:disabled,
+.cloud-code-form button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.generated-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid #bdd29f;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.generated-code > div {
+  display: grid;
+  gap: 1px;
+}
+
+.generated-code span {
+  color: #6d7b65;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.generated-code output {
+  color: #203b18;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.generated-code button {
+  padding: 7px 8px;
+}
+
+.cloud-code-form {
+  display: grid;
+  gap: 5px;
+}
+
+.cloud-code-form label {
+  color: #4e6149;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.cloud-code-form > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 7px;
+}
+
+.cloud-code-form input {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #b8caaa;
+  border-radius: 8px;
+  color: #203324;
+  background: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cloud-code-form button {
+  min-width: 0;
+  padding: 8px 6px;
+}
+
+.cloud-code-form small {
+  color: #73806d;
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.cloud-message {
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  color: #42563b;
+  background: rgba(221, 237, 204, 0.82);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
 .catalog-help {
   margin: 13px 12px 16px 0;
   color: var(--muted);
@@ -1402,6 +1565,50 @@ input:focus-visible,
   color: #92a3b1;
 }
 
+:root[data-theme="dark"] .cloud-sharing {
+  border-color: #3b5330;
+  background: linear-gradient(145deg, #17251b, #132019);
+}
+
+:root[data-theme="dark"] .cloud-sharing-copy strong {
+  color: #dce9d7;
+}
+
+:root[data-theme="dark"] .cloud-sharing-copy p,
+:root[data-theme="dark"] .cloud-code-form small {
+  color: #96a590;
+}
+
+:root[data-theme="dark"] .cloud-badge {
+  color: #d6f2b5;
+  background: #314a25;
+}
+
+:root[data-theme="dark"] .generated-code {
+  border-color: #40583a;
+  background: rgba(12, 25, 18, 0.82);
+}
+
+:root[data-theme="dark"] .generated-code span,
+:root[data-theme="dark"] .cloud-code-form label {
+  color: #9cae95;
+}
+
+:root[data-theme="dark"] .generated-code output {
+  color: #dff6cf;
+}
+
+:root[data-theme="dark"] .cloud-code-form input {
+  border-color: #405842;
+  color: #e3eee4;
+  background: #0d1b14;
+}
+
+:root[data-theme="dark"] .cloud-message {
+  color: #c3d8ba;
+  background: rgba(48, 73, 39, 0.72);
+}
+
 :root[data-theme="dark"] .autosave-indicator {
   color: #9cabb8;
 }
@@ -1938,6 +2145,7 @@ input:focus-visible,
 
   .catalog-help,
   .progress-backup,
+  .cloud-sharing,
   .catalog-tabs,
   .autosave-indicator,
   .file-message {

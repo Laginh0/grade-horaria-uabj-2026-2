@@ -48,6 +48,8 @@ type SavedListState = {
 const progressStorageKey = "grade-uabj-2026-2";
 const progressCookieName = "grade_uabj_2026_2";
 const cookieLifetimeSeconds = 60 * 60 * 24 * 365;
+const sharingApiUrl =
+  "https://grade-computacao-uabj-2026.linuxpenguin12362015.chatgpt.site/api/share-codes";
 
 const readProgressCookie = () => {
   if (typeof document === "undefined") return null;
@@ -801,6 +803,10 @@ export default function Home() {
   );
   const [autosaveStatus, setAutosaveStatus] = useState("Autosave ativo");
   const [fileMessage, setFileMessage] = useState("");
+  const [cloudCodeInput, setCloudCodeInput] = useState("");
+  const [generatedCloudCode, setGeneratedCloudCode] = useState("");
+  const [cloudMessage, setCloudMessage] = useState("");
+  const [isCloudBusy, setIsCloudBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1191,6 +1197,52 @@ export default function Home() {
     });
   };
 
+  const restoreSavedState = (parsed: SavedListState) => {
+    const validIds = new Set(disciplines.map((discipline) => discipline.id));
+    const restoredCompleted = new Set(
+      (parsed.completedIds ?? []).filter((id) => validIds.has(id)),
+    );
+    const restoredSelected = new Set(
+      (parsed.selectedIds ?? []).filter(
+        (id) =>
+          validIds.has(id) &&
+          !restoredCompleted.has(id) &&
+          (prerequisiteIds[id] ?? []).every((prerequisiteId) =>
+            restoredCompleted.has(prerequisiteId),
+          ),
+      ),
+    );
+    const restoredOfferings: Record<string, string> = {};
+    restoredSelected.forEach((id) => {
+      const discipline = disciplines.find((candidate) => candidate.id === id);
+      if (!discipline?.offerings?.length) return;
+      const requestedOffering = parsed.selectedOfferingIds?.[id];
+      const validOffering = discipline.offerings.find(
+        (offering) => offering.id === requestedOffering,
+      );
+      restoredOfferings[id] = validOffering?.id ?? discipline.offerings[0].id;
+    });
+    setCompletedIds(restoredCompleted);
+    setSelectedIds(restoredSelected);
+    setSelectedOfferingIds(restoredOfferings);
+    if (
+      parsed.catalogTab === "all" ||
+      parsed.catalogTab === "completed" ||
+      parsed.catalogTab === "eligible" ||
+      parsed.catalogTab === "conflict-free"
+    ) {
+      setCatalogTab(parsed.catalogTab);
+    }
+  };
+
+  const currentShareState = (): SavedListState => ({
+    version: 3,
+    selectedIds: [...selectedIds],
+    completedIds: [...completedIds],
+    selectedOfferingIds,
+    catalogTab,
+  });
+
   const saveProgressFile = () => {
     const state = {
       version: 3,
@@ -1222,51 +1274,92 @@ export default function Home() {
 
   const loadProgressFile = async (file: File) => {
     try {
-      const parsed = JSON.parse(await file.text()) as {
-        selectedIds?: string[];
-        completedIds?: string[];
-        selectedOfferingIds?: Record<string, string>;
-        catalogTab?: CatalogTab;
-      };
-      const validIds = new Set(disciplines.map((discipline) => discipline.id));
-      const restoredCompleted = new Set(
-        (parsed.completedIds ?? []).filter((id) => validIds.has(id)),
-      );
-      const restoredSelected = new Set(
-        (parsed.selectedIds ?? []).filter(
-          (id) =>
-            validIds.has(id) &&
-            !restoredCompleted.has(id) &&
-            (prerequisiteIds[id] ?? []).every((prerequisiteId) =>
-              restoredCompleted.has(prerequisiteId),
-            ),
-        ),
-      );
-      const restoredOfferings: Record<string, string> = {};
-      restoredSelected.forEach((id) => {
-        const discipline = disciplines.find((candidate) => candidate.id === id);
-        if (!discipline?.offerings?.length) return;
-        const requestedOffering = parsed.selectedOfferingIds?.[id];
-        const validOffering = discipline.offerings.find(
-          (offering) => offering.id === requestedOffering,
-        );
-        restoredOfferings[id] =
-          validOffering?.id ?? discipline.offerings[0].id;
-      });
-      setCompletedIds(restoredCompleted);
-      setSelectedIds(restoredSelected);
-      setSelectedOfferingIds(restoredOfferings);
-      if (
-        parsed.catalogTab === "all" ||
-        parsed.catalogTab === "completed" ||
-        parsed.catalogTab === "eligible" ||
-        parsed.catalogTab === "conflict-free"
-      ) {
-        setCatalogTab(parsed.catalogTab);
-      }
+      const parsed = JSON.parse(await file.text()) as SavedListState;
+      restoreSavedState(parsed);
       setFileMessage("Arquivo carregado com sucesso.");
     } catch {
       setFileMessage("Não foi possível ler este arquivo.");
+    }
+  };
+
+  const createCloudCode = async () => {
+    if (selectedIds.size === 0 && completedIds.size === 0) {
+      setCloudMessage("Selecione alguma disciplina antes de gerar o código.");
+      return;
+    }
+    setIsCloudBusy(true);
+    setCloudMessage("Salvando uma cópia permanente na nuvem...");
+    try {
+      const response = await fetch(sharingApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentShareState()),
+      });
+      const result = (await response.json()) as { code?: string; error?: string };
+      if (!response.ok || !result.code) {
+        throw new Error(result.error ?? "Não foi possível gerar o código.");
+      }
+      setGeneratedCloudCode(result.code);
+      setCloudCodeInput(result.code);
+      setCloudMessage("Código criado. Ele não expira e sempre abrirá esta grade.");
+    } catch (error) {
+      setCloudMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar o código.",
+      );
+    } finally {
+      setIsCloudBusy(false);
+    }
+  };
+
+  const loadCloudCode = async () => {
+    if (!/^\d{5}$/.test(cloudCodeInput)) {
+      setCloudMessage("Digite os cinco dígitos do código.");
+      return;
+    }
+    setIsCloudBusy(true);
+    setCloudMessage("Buscando a grade na nuvem...");
+    try {
+      const response = await fetch(
+        `${sharingApiUrl}?code=${encodeURIComponent(cloudCodeInput)}`,
+      );
+      const result = (await response.json()) as {
+        state?: SavedListState;
+        error?: string;
+      };
+      if (!response.ok || !result.state) {
+        throw new Error(result.error ?? "Código não encontrado.");
+      }
+      restoreSavedState(result.state);
+      setGeneratedCloudCode(cloudCodeInput);
+      setCloudMessage("Grade recuperada. O autosave já está ativo neste dispositivo.");
+    } catch (error) {
+      setCloudMessage(
+        error instanceof Error ? error.message : "Não foi possível buscar o código.",
+      );
+    } finally {
+      setIsCloudBusy(false);
+    }
+  };
+
+  const shareCloudCode = async () => {
+    if (!generatedCloudCode) return;
+    const text = `Minha grade UABJ 2026.2 — código ${generatedCloudCode}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Grade Horária UABJ 2026.2",
+          text,
+          url: "https://laginh0.github.io/grade-horaria-uabj-2026-2/",
+        });
+        setCloudMessage("Código compartilhado.");
+      } else {
+        await navigator.clipboard.writeText(`${text}\nhttps://laginh0.github.io/grade-horaria-uabj-2026-2/`);
+        setCloudMessage("Código e endereço copiados.");
+      }
+    } catch {
+      setCloudMessage("Copie o código exibido e envie para seus amigos.");
     }
   };
 
@@ -1411,6 +1504,79 @@ export default function Home() {
               />
             </div>
           </div>
+          <section className="cloud-sharing" aria-labelledby="cloud-sharing-title">
+            <div className="cloud-sharing-copy">
+              <span className="cloud-badge">Nuvem</span>
+              <div>
+                <strong id="cloud-sharing-title">Compartilhar com código</strong>
+                <p>
+                  Gere cinco dígitos permanentes ou digite um código recebido para
+                  recuperar a grade em outro dispositivo.
+                </p>
+              </div>
+            </div>
+
+            <button
+              className="cloud-create-button"
+              type="button"
+              disabled={isCloudBusy}
+              onClick={() => void createCloudCode()}
+            >
+              {isCloudBusy ? "Aguarde..." : "Gerar código permanente"}
+            </button>
+
+            {generatedCloudCode && (
+              <div className="generated-code" aria-live="polite">
+                <div>
+                  <span>Seu código</span>
+                  <output>{generatedCloudCode}</output>
+                </div>
+                <button type="button" onClick={() => void shareCloudCode()}>
+                  Compartilhar
+                </button>
+              </div>
+            )}
+
+            <form
+              className="cloud-code-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadCloudCode();
+              }}
+            >
+              <label htmlFor="cloud-code">Abrir código existente</label>
+              <div>
+                <input
+                  id="cloud-code"
+                  value={cloudCodeInput}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={5}
+                  pattern="[0-9]{5}"
+                  placeholder="00000"
+                  aria-describedby="cloud-code-help"
+                  onChange={(event) =>
+                    setCloudCodeInput(
+                      event.target.value.replace(/\D/g, "").slice(0, 5),
+                    )
+                  }
+                />
+                <button type="submit" disabled={isCloudBusy}>
+                  Recuperar grade
+                </button>
+              </div>
+              <small id="cloud-code-help">
+                O código não expira. Gerar novamente a mesma grade retorna o mesmo
+                número.
+              </small>
+            </form>
+
+            {cloudMessage && (
+              <p className="cloud-message" role="status" aria-live="polite">
+                {cloudMessage}
+              </p>
+            )}
+          </section>
           <div className="autosave-indicator" role="status" aria-live="polite">
             <span aria-hidden="true" />
             {autosaveStatus}
