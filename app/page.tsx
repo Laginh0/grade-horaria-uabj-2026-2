@@ -11,6 +11,14 @@ type ClassTime = {
   professor?: string;
 };
 
+type CourseOffering = {
+  id: string;
+  professor: string;
+  room: string;
+  label?: string;
+  times: ClassTime[];
+};
+
 type Discipline = {
   id: string;
   period: string;
@@ -19,11 +27,58 @@ type Discipline = {
   room: string;
   color: number;
   times: ClassTime[];
+  offerings?: CourseOffering[];
 };
 
 type DisplayEvent = ClassTime & {
   discipline: Discipline;
   key: string;
+};
+
+type CatalogTab = "all" | "completed" | "eligible" | "conflict-free";
+
+type SavedListState = {
+  version?: number;
+  selectedIds?: string[];
+  completedIds?: string[];
+  selectedOfferingIds?: Record<string, string>;
+  catalogTab?: CatalogTab;
+};
+
+const progressStorageKey = "grade-uabj-2026-2";
+const progressCookieName = "grade_uabj_2026_2";
+const cookieLifetimeSeconds = 60 * 60 * 24 * 365;
+
+const readProgressCookie = () => {
+  if (typeof document === "undefined") return null;
+  const prefix = `${progressCookieName}=`;
+  const value = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith(prefix))
+    ?.slice(prefix.length);
+  return value ? decodeURIComponent(value) : null;
+};
+
+const writeProgressCookie = (value: string) => {
+  if (typeof document === "undefined") return false;
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${progressCookieName}=${encodeURIComponent(value)}; Max-Age=${cookieLifetimeSeconds}; Path=/; SameSite=Lax${secure}`;
+    return document.cookie
+      .split("; ")
+      .some((cookie) => cookie.startsWith(`${progressCookieName}=`));
+  } catch {
+    return false;
+  }
+};
+
+const clearProgressCookie = () => {
+  if (typeof document === "undefined") return;
+  try {
+    document.cookie = `${progressCookieName}=; Max-Age=0; Path=/; SameSite=Lax`;
+  } catch {
+    // O armazenamento local continua disponível quando cookies são bloqueados.
+  }
 };
 
 const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
@@ -45,6 +100,26 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Cálculo 1",
     professor: "Roy Guarniz",
     room: "AEB-04B",
+    offerings: [
+      {
+        id: "roy-guarniz",
+        professor: "Roy Guarniz",
+        room: "AEB-04B",
+        times: [t(0, 10, 12), t(2, 10, 12)],
+      },
+      {
+        id: "eber-vizarreta",
+        professor: "Eber Vizarreta",
+        room: "AEB-02C",
+        times: [t(0, 8, 10), t(2, 10, 12)],
+      },
+      {
+        id: "jose-ramos",
+        professor: "José Ramos dos Santos",
+        room: "AEB-02B",
+        times: [t(0, 10, 12), t(2, 10, 12)],
+      },
+    ],
     times: [t(0, 10, 12), t(2, 10, 12)],
   },
   {
@@ -53,6 +128,28 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Geometria Analítica",
     professor: "Rebeka Domingues",
     room: "AEB-03B",
+    offerings: [
+      {
+        id: "rebeka-computacao",
+        professor: "Rebeka Domingues",
+        room: "AEB-03B",
+        label: "Turma da Computação",
+        times: [t(0, 13, 16)],
+      },
+      {
+        id: "rebeka-compartilhada",
+        professor: "Rebeka Domingues",
+        room: "AEB-03B",
+        label: "Turma compartilhada",
+        times: [t(1, 10, 13)],
+      },
+      {
+        id: "mauri-pereira",
+        professor: "Mauri Pereira",
+        room: "AEB-05B",
+        times: [t(0, 10, 13)],
+      },
+    ],
     times: [t(0, 13, 16)],
   },
   {
@@ -69,6 +166,26 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Física 1",
     professor: "Elaine Oliveira da Silva",
     room: "AEB-05C",
+    offerings: [
+      {
+        id: "elaine-oliveria",
+        professor: "Elaine Oliveria da Silva",
+        room: "AEB-05C",
+        times: [t(1, 10, 12), t(2, 8, 10)],
+      },
+      {
+        id: "nathan-pessoa",
+        professor: "Nathan Pessoa",
+        room: "AEB-08B",
+        times: [t(1, 10, 12), t(2, 8, 10)],
+      },
+      {
+        id: "fabio-novaes",
+        professor: "Fábio Novaes",
+        room: "AEB-03B",
+        times: [t(1, 8, 10), t(2, 8, 10)],
+      },
+    ],
     times: [t(1, 10, 12), t(2, 8, 10)],
   },
   {
@@ -93,6 +210,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Programação 1",
     professor: "Docente em contratação (DEINFO)",
     room: "AEB-04C",
+    offerings: [
+      {
+        id: "deinfo-contratacao",
+        professor: "Docente em contratação (DEINFO)",
+        room: "AEB-04C",
+        times: [t(3, 16, 18), t(4, 16, 18)],
+      },
+      {
+        id: "camila-ascendina",
+        professor: "Camila Ascendina",
+        room: "AEB-04C",
+        times: [t(0, 14, 16), t(1, 14, 16)],
+      },
+    ],
     times: [t(3, 16, 18), t(4, 16, 18)],
   },
   {
@@ -117,6 +248,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Cálculo 2",
     professor: "Roy Guarniz",
     room: "AEB-04B",
+    offerings: [
+      {
+        id: "roy-guarniz",
+        professor: "Roy Guarniz",
+        room: "AEB-04B",
+        times: [t(0, 14, 16), t(2, 14, 16)],
+      },
+      {
+        id: "mauri-pereira",
+        professor: "Mauri Pereira",
+        room: "AEB-04B",
+        times: [t(0, 8, 10), t(1, 10, 12)],
+      },
+    ],
     times: [t(0, 14, 16), t(2, 14, 16)],
   },
   {
@@ -125,6 +270,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Álgebra Linear",
     professor: "Mauri Pereira",
     room: "AEB-05B",
+    offerings: [
+      {
+        id: "mauri-pereira",
+        professor: "Mauri Pereira",
+        room: "AEB-05B",
+        times: [t(0, 16, 18), t(1, 16, 18)],
+      },
+      {
+        id: "eber-vizarreta",
+        professor: "Eber Vizarreta",
+        room: "AEB-02C",
+        times: [t(0, 10, 12), t(2, 8, 10)],
+      },
+    ],
     times: [t(0, 16, 18), t(1, 16, 18)],
   },
   {
@@ -133,6 +292,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Física 2 (1)",
     professor: "Elaine Oliveira da Silva",
     room: "AEB-05C",
+    offerings: [
+      {
+        id: "elaine-oliveria",
+        professor: "Elaine Oliveria da Silva",
+        room: "AEB-05C",
+        times: [t(1, 8, 10), t(2, 10, 12)],
+      },
+      {
+        id: "nathan-pessoa",
+        professor: "Nathan Pessoa",
+        room: "AEB-08B",
+        times: [t(1, 14, 16), t(3, 14, 16)],
+      },
+    ],
     times: [t(1, 8, 10), t(2, 10, 12)],
   },
   {
@@ -181,6 +354,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Sistemas Digitais",
     professor: "Camila Ascendina",
     room: "AEB-04C",
+    offerings: [
+      {
+        id: "camila-ascendina",
+        professor: "Camila Ascendina",
+        room: "AEB-04C",
+        times: [t(1, 8, 10), t(2, 10, 12)],
+      },
+      {
+        id: "henrique-patriota",
+        professor: "Henrique Patriota",
+        room: "AEB-07B",
+        times: [t(0, 16, 18), t(1, 16, 18)],
+      },
+    ],
     times: [t(1, 8, 10), t(2, 10, 12)],
   },
   {
@@ -189,6 +376,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Física 3 (1)",
     professor: "Elaine Oliveira da Silva",
     room: "AEB-02B",
+    offerings: [
+      {
+        id: "elaine-oliveria",
+        professor: "Elaine Oliveria da Silva",
+        room: "AEB-02B",
+        times: [t(1, 16, 18), t(2, 16, 18)],
+      },
+      {
+        id: "fabio-novaes",
+        professor: "Fábio Novaes",
+        room: "AEB-01C",
+        times: [t(2, 10, 12), t(3, 10, 12)],
+      },
+    ],
     times: [t(1, 16, 18), t(2, 16, 18)],
   },
   {
@@ -237,6 +438,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Circuitos Elétricos 1",
     professor: "Ana Paula (em contratação)",
     room: "AEB-06C",
+    offerings: [
+      {
+        id: "ana-paula",
+        professor: "Ana Paula (em contratação)",
+        room: "AEB-06C",
+        times: [t(2, 16, 18), t(3, 16, 18), t(4, 8, 10)],
+      },
+      {
+        id: "egydio-tadeu",
+        professor: "Egydio Tadeu",
+        room: "AEB-02A",
+        times: [t(2, 16, 18), t(3, 16, 18), t(4, 8, 10)],
+      },
+    ],
     times: [t(2, 16, 18), t(3, 16, 18), t(4, 8, 10)],
   },
   {
@@ -437,6 +652,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     name: "Projeto de Co-Desenvolvimento HW/SW",
     professor: "Camila Ascendina e Jaqueline Silva",
     room: "AEB-04C / sala não informada",
+    offerings: [
+      {
+        id: "camila-ascendina",
+        professor: "Camila Ascendina",
+        room: "AEB-04C",
+        times: [t(0, 16, 18), t(1, 16, 18)],
+      },
+      {
+        id: "jaqueline-silva",
+        professor: "Jaqueline Silva",
+        room: "Sala não informada",
+        times: [t(4, 14, 16), t(4, 16, 18)],
+      },
+    ],
     times: [
       t(0, 16, 18, "AEB-04C", "Camila Ascendina"),
       t(1, 16, 18, "AEB-04C", "Camila Ascendina"),
@@ -553,21 +782,73 @@ const formatTimes = (times: ClassTime[]) =>
     .map((time) => `${shortDays[time.day]} ${time.start}–${time.end}h`)
     .join(" · ");
 
+const getOffering = (discipline: Discipline, offeringId?: string) =>
+  discipline.offerings?.find((offering) => offering.id === offeringId) ??
+  discipline.offerings?.[0];
+
 export default function Home() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [isHydrated, setIsHydrated] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isThemeHydrated, setIsThemeHydrated] = useState(false);
+  const [catalogTab, setCatalogTab] = useState<CatalogTab>("all");
+  const [selectedOfferingIds, setSelectedOfferingIds] = useState<
+    Record<string, string>
+  >({});
+  const [pendingDisciplineId, setPendingDisciplineId] = useState<string | null>(
+    null,
+  );
+  const [autosaveStatus, setAutosaveStatus] = useState("Autosave ativo");
   const [fileMessage, setFileMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem("grade-uabj-2026-2");
-      if (stored) {
-        const parsed = JSON.parse(stored) as {
-          selectedIds?: string[];
-          completedIds?: string[];
-        };
+      const storedTheme = window.localStorage.getItem("grade-uabj-theme");
+      const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
+      setTheme(
+        storedTheme === "dark" || storedTheme === "light"
+          ? storedTheme
+          : preferredTheme,
+      );
+    } finally {
+      setIsThemeHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isThemeHydrated) return;
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem("grade-uabj-theme", theme);
+    } catch {
+      // A preferência continua ativa enquanto o arquivo estiver aberto.
+    }
+  }, [isThemeHydrated, theme]);
+
+  useEffect(() => {
+    try {
+      const cookieState = readProgressCookie();
+      const localState = window.localStorage.getItem(progressStorageKey);
+      let parsed: SavedListState | null = null;
+
+      if (cookieState) {
+        try {
+          parsed = JSON.parse(cookieState) as SavedListState;
+        } catch {
+          clearProgressCookie();
+        }
+      }
+
+      if (!parsed && localState) {
+        parsed = JSON.parse(localState) as SavedListState;
+      }
+
+      if (parsed) {
         const validIds = new Set(disciplines.map((discipline) => discipline.id));
         const restoredCompleted = new Set(
           (parsed.completedIds ?? []).filter((id) => validIds.has(id)),
@@ -582,11 +863,32 @@ export default function Home() {
               ),
           ),
         );
+        const restoredOfferings: Record<string, string> = {};
+        restoredSelected.forEach((id) => {
+          const discipline = disciplines.find((candidate) => candidate.id === id);
+          if (!discipline?.offerings?.length) return;
+          const requestedOffering = parsed.selectedOfferingIds?.[id];
+          const validOffering = discipline.offerings.find(
+            (offering) => offering.id === requestedOffering,
+          );
+          restoredOfferings[id] =
+            validOffering?.id ?? discipline.offerings[0].id;
+        });
         setCompletedIds(restoredCompleted);
         setSelectedIds(restoredSelected);
+        setSelectedOfferingIds(restoredOfferings);
+        if (
+          parsed.catalogTab === "all" ||
+          parsed.catalogTab === "completed" ||
+          parsed.catalogTab === "eligible" ||
+          parsed.catalogTab === "conflict-free"
+        ) {
+          setCatalogTab(parsed.catalogTab);
+        }
       }
     } catch {
-      window.localStorage.removeItem("grade-uabj-2026-2");
+      window.localStorage.removeItem(progressStorageKey);
+      clearProgressCookie();
     } finally {
       setIsHydrated(true);
     }
@@ -594,15 +896,36 @@ export default function Home() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    window.localStorage.setItem(
-      "grade-uabj-2026-2",
-      JSON.stringify({
-        version: 1,
+    setAutosaveStatus("Salvando...");
+    const saveTimer = window.setTimeout(() => {
+      const serializedState = JSON.stringify({
+        version: 3,
         selectedIds: [...selectedIds],
         completedIds: [...completedIds],
-      }),
-    );
-  }, [completedIds, isHydrated, selectedIds]);
+        selectedOfferingIds,
+        catalogTab,
+      });
+      let localSaved = false;
+      try {
+        window.localStorage.setItem(
+          progressStorageKey,
+          serializedState,
+        );
+        localSaved = true;
+      } catch {
+        // O cookie ainda pode manter o estado quando o armazenamento local falha.
+      }
+      const cookieSaved = writeProgressCookie(serializedState);
+      setAutosaveStatus(
+        cookieSaved
+          ? "Salvo automaticamente em cookie"
+          : localSaved
+            ? "Salvo automaticamente neste dispositivo"
+            : "Autosave indisponível",
+      );
+    }, 220);
+    return () => window.clearTimeout(saveTimer);
+  }, [catalogTab, completedIds, isHydrated, selectedIds, selectedOfferingIds]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -620,6 +943,26 @@ export default function Home() {
     });
   }, [completedIds, isHydrated]);
 
+  useEffect(() => {
+    setSelectedOfferingIds((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([id]) => selectedIds.has(id)),
+      );
+      return Object.keys(next).length === Object.keys(current).length
+        ? current
+        : next;
+    });
+  }, [selectedIds]);
+
+  useEffect(() => {
+    if (!pendingDisciplineId) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPendingDisciplineId(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [pendingDisciplineId]);
+
   const selectedDisciplines = useMemo(
     () => disciplines.filter((discipline) => selectedIds.has(discipline.id)),
     [selectedIds],
@@ -627,14 +970,21 @@ export default function Home() {
 
   const events = useMemo<DisplayEvent[]>(
     () =>
-      selectedDisciplines.flatMap((discipline) =>
-        discipline.times.map((time, index) => ({
+      selectedDisciplines.flatMap((discipline) => {
+        const offering = getOffering(
+          discipline,
+          selectedOfferingIds[discipline.id],
+        );
+        const activeTimes = offering?.times ?? discipline.times;
+        return activeTimes.map((time, index) => ({
           ...time,
+          professor: offering?.professor ?? time.professor,
+          room: offering?.room ?? time.room,
           discipline,
           key: `${discipline.id}-${index}`,
-        })),
-      ),
-    [selectedDisciplines],
+        }));
+      }),
+    [selectedDisciplines, selectedOfferingIds],
   );
 
   const conflictData = useMemo(() => {
@@ -684,15 +1034,19 @@ export default function Home() {
     return { eventKeys, pairs: [...pairs.values()] };
   }, [events]);
 
-  const totalHours = selectedDisciplines.reduce(
-    (sum, discipline) =>
+  const totalHours = selectedDisciplines.reduce((sum, discipline) => {
+    const offering = getOffering(
+      discipline,
+      selectedOfferingIds[discipline.id],
+    );
+    return (
       sum +
-      discipline.times.reduce(
+      (offering?.times ?? discipline.times).reduce(
         (disciplineSum, time) => disciplineSum + time.end - time.start,
         0,
-      ),
-    0,
-  );
+      )
+    );
+  }, 0);
 
   const groupedDisciplines = useMemo(
     () =>
@@ -703,18 +1057,117 @@ export default function Home() {
     [],
   );
 
+  const eligibleCount = useMemo(
+    () =>
+      disciplines.filter(
+        (discipline) =>
+          !completedIds.has(discipline.id) &&
+          (prerequisiteIds[discipline.id] ?? []).every((prerequisiteId) =>
+            completedIds.has(prerequisiteId),
+          ),
+      ).length,
+    [completedIds],
+  );
+
+  const conflictFreeIds = useMemo(() => {
+    const compatibleIds = new Set<string>();
+    disciplines.forEach((discipline) => {
+      if (
+        selectedIds.has(discipline.id) ||
+        completedIds.has(discipline.id) ||
+        !(prerequisiteIds[discipline.id] ?? []).every((prerequisiteId) =>
+          completedIds.has(prerequisiteId),
+        )
+      ) {
+        return;
+      }
+
+      const offeringTimes = discipline.offerings?.map(
+        (offering) => offering.times,
+      ) ?? [discipline.times];
+      const hasCompatibleOffering = offeringTimes.some(
+        (times) =>
+          !times.some((time) =>
+            events.some(
+              (event) =>
+                event.discipline.id !== discipline.id &&
+                event.day === time.day &&
+                event.start < time.end &&
+                time.start < event.end,
+            ),
+          ),
+      );
+      if (hasCompatibleOffering) compatibleIds.add(discipline.id);
+    });
+    return compatibleIds;
+  }, [completedIds, events, selectedIds]);
+
+  const visibleGroupedDisciplines = useMemo(
+    () =>
+      groupedDisciplines
+        .map(({ period, items }) => ({
+          period,
+          items: items.filter((discipline) => {
+            if (catalogTab === "completed") {
+              return completedIds.has(discipline.id);
+            }
+            if (catalogTab === "eligible") {
+              return (
+                !completedIds.has(discipline.id) &&
+                (prerequisiteIds[discipline.id] ?? []).every(
+                  (prerequisiteId) => completedIds.has(prerequisiteId),
+                )
+              );
+            }
+            if (catalogTab === "conflict-free") {
+              return conflictFreeIds.has(discipline.id);
+            }
+            return true;
+          }),
+        }))
+        .filter(({ items }) => items.length > 0),
+    [catalogTab, completedIds, conflictFreeIds, groupedDisciplines],
+  );
+
   const toggleDiscipline = (id: string) => {
     if (completedIds.has(id)) return;
     const missing = (prerequisiteIds[id] ?? []).filter(
       (prerequisiteId) => !completedIds.has(prerequisiteId),
     );
     if (missing.length > 0) return;
+    const discipline = disciplines.find((candidate) => candidate.id === id);
+    if (!discipline) return;
+    if (selectedIds.has(id)) {
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      setSelectedOfferingIds((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+    if ((discipline.offerings?.length ?? 0) > 1) {
+      setPendingDisciplineId(id);
+      return;
+    }
     setSelectedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.add(id);
       return next;
     });
+  };
+
+  const chooseOffering = (disciplineId: string, offeringId: string) => {
+    setSelectedOfferingIds((current) => ({
+      ...current,
+      [disciplineId]: offeringId,
+    }));
+    setSelectedIds((current) => new Set(current).add(disciplineId));
+    setPendingDisciplineId(null);
   };
 
   const toggleCompleted = (id: string) => {
@@ -730,16 +1183,24 @@ export default function Home() {
       next.delete(id);
       return next;
     });
+    setSelectedOfferingIds((current) => {
+      if (!(id in current)) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
   };
 
   const saveProgressFile = () => {
     const state = {
-      version: 1,
+      version: 3,
       curso: "Engenharia de Computação — UABJ",
       semestre: "2026.2",
       savedAt: new Date().toISOString(),
       selectedIds: [...selectedIds],
       completedIds: [...completedIds],
+      selectedOfferingIds,
+      catalogTab,
       selectedDisciplines: disciplines
         .filter((discipline) => selectedIds.has(discipline.id))
         .map((discipline) => discipline.name),
@@ -764,6 +1225,8 @@ export default function Home() {
       const parsed = JSON.parse(await file.text()) as {
         selectedIds?: string[];
         completedIds?: string[];
+        selectedOfferingIds?: Record<string, string>;
+        catalogTab?: CatalogTab;
       };
       const validIds = new Set(disciplines.map((discipline) => discipline.id));
       const restoredCompleted = new Set(
@@ -779,8 +1242,28 @@ export default function Home() {
             ),
         ),
       );
+      const restoredOfferings: Record<string, string> = {};
+      restoredSelected.forEach((id) => {
+        const discipline = disciplines.find((candidate) => candidate.id === id);
+        if (!discipline?.offerings?.length) return;
+        const requestedOffering = parsed.selectedOfferingIds?.[id];
+        const validOffering = discipline.offerings.find(
+          (offering) => offering.id === requestedOffering,
+        );
+        restoredOfferings[id] =
+          validOffering?.id ?? discipline.offerings[0].id;
+      });
       setCompletedIds(restoredCompleted);
       setSelectedIds(restoredSelected);
+      setSelectedOfferingIds(restoredOfferings);
+      if (
+        parsed.catalogTab === "all" ||
+        parsed.catalogTab === "completed" ||
+        parsed.catalogTab === "eligible" ||
+        parsed.catalogTab === "conflict-free"
+      ) {
+        setCatalogTab(parsed.catalogTab);
+      }
       setFileMessage("Arquivo carregado com sucesso.");
     } catch {
       setFileMessage("Não foi possível ler este arquivo.");
@@ -804,14 +1287,33 @@ export default function Home() {
     return { index: Math.max(index, 0), count: Math.max(overlaps.length, 1) };
   };
 
+  const pendingDiscipline = disciplines.find(
+    (discipline) => discipline.id === pendingDisciplineId,
+  );
+
   return (
     <main className="app-shell">
       <header className="hero">
         <div className="brand-line">
-          <span className="brand-mark" aria-hidden="true">
-            GH
-          </span>
-          <span>UABJ · Engenharia de Computação · 2026.2</span>
+          <div className="brand-identity">
+            <span className="brand-mark" aria-hidden="true">
+              GH
+            </span>
+            <span>UABJ · Engenharia de Computação · 2026.2</span>
+          </div>
+          <button
+            className="theme-toggle"
+            type="button"
+            aria-pressed={theme === "dark"}
+            onClick={() =>
+              setTheme((current) => (current === "dark" ? "light" : "dark"))
+            }
+          >
+            <span className="theme-icon" aria-hidden="true">
+              {theme === "dark" ? "☀" : "◐"}
+            </span>
+            {theme === "dark" ? "Modo claro" : "Modo escuro"}
+          </button>
         </div>
         <div className="hero-content">
           <div>
@@ -864,25 +1366,43 @@ export default function Home() {
                   Limpar grade
                 </button>
               )}
+            </div>
+          </div>
+          <p className="catalog-help">
+            Marque as opções para adicioná-las à grade ou sinalize o que você já
+            pagou. O autosave usa cookie e armazenamento local neste dispositivo.
+          </p>
+          <div className="progress-backup">
+            <div className="progress-backup-copy">
+              <strong>Backup da sua grade</strong>
+              <span>
+                Baixe seu progresso e carregue o arquivo depois, inclusive em
+                outro computador.
+              </span>
+            </div>
+            <div className="progress-backup-actions">
               <button
                 className="file-button"
                 type="button"
                 onClick={saveProgressFile}
               >
-                Salvar arquivo
+                <span aria-hidden="true">↓</span>
+                Baixar progresso
               </button>
               <button
                 className="file-button"
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Carregar
+                <span aria-hidden="true">↑</span>
+                Carregar arquivo
               </button>
               <input
                 className="file-input"
                 ref={fileInputRef}
                 type="file"
                 accept="application/json,.json"
+                aria-label="Selecionar arquivo de progresso da grade"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void loadProgressFile(file);
@@ -891,18 +1411,74 @@ export default function Home() {
               />
             </div>
           </div>
-          <p className="catalog-help">
-            Marque as opções para adicioná-las à grade ou sinalize o que você já
-            pagou. O progresso fica salvo neste dispositivo.
-          </p>
+          <div className="autosave-indicator" role="status" aria-live="polite">
+            <span aria-hidden="true" />
+            {autosaveStatus}
+          </div>
           {fileMessage && (
             <p className="file-message" role="status">
               {fileMessage}
             </p>
           )}
 
-          <div className="discipline-list">
-            {groupedDisciplines.map(({ period, items }) => (
+          <div
+            className="catalog-tabs"
+            role="tablist"
+            aria-label="Filtrar disciplinas"
+          >
+            <button
+              id="tab-all"
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === "all"}
+              aria-controls="discipline-tab-panel"
+              className={catalogTab === "all" ? "is-active" : ""}
+              onClick={() => setCatalogTab("all")}
+            >
+              Todas <span>{disciplines.length}</span>
+            </button>
+            <button
+              id="tab-completed"
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === "completed"}
+              aria-controls="discipline-tab-panel"
+              className={catalogTab === "completed" ? "is-active" : ""}
+              onClick={() => setCatalogTab("completed")}
+            >
+              Concluídas <span>{completedIds.size}</span>
+            </button>
+            <button
+              id="tab-eligible"
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === "eligible"}
+              aria-controls="discipline-tab-panel"
+              className={catalogTab === "eligible" ? "is-active" : ""}
+              onClick={() => setCatalogTab("eligible")}
+            >
+              Podem matricular <span>{eligibleCount}</span>
+            </button>
+            <button
+              id="tab-conflict-free"
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === "conflict-free"}
+              aria-controls="discipline-tab-panel"
+              className={catalogTab === "conflict-free" ? "is-active" : ""}
+              onClick={() => setCatalogTab("conflict-free")}
+            >
+              Sem conflitos <span>{conflictFreeIds.size}</span>
+            </button>
+          </div>
+
+          <div
+            className="discipline-list"
+            id="discipline-tab-panel"
+            role="tabpanel"
+            aria-labelledby={`tab-${catalogTab}`}
+          >
+            {visibleGroupedDisciplines.map(({ period, items }) => (
               <section className="period-group" key={period}>
                 <div className="period-heading">
                   <h3>{period}</h3>
@@ -918,6 +1494,20 @@ export default function Home() {
                     );
                     const isLocked =
                       !isCompleted && missingPrerequisites.length > 0;
+                    const hasMultipleOfferings =
+                      (discipline.offerings?.length ?? 0) > 1;
+                    const selectedOffering = isSelected
+                      ? getOffering(
+                          discipline,
+                          selectedOfferingIds[discipline.id],
+                        )
+                      : undefined;
+                    const professorCount = new Set(
+                      discipline.offerings?.map(
+                        (offering) => offering.professor,
+                      ) ?? [discipline.professor],
+                    ).size;
+                    const isElective = discipline.period.startsWith("Optativa");
                     const prerequisiteNames = prerequisites.map(
                       (prerequisiteId) =>
                         disciplines.find(
@@ -954,14 +1544,42 @@ export default function Home() {
                             ✓
                           </span>
                           <span className="discipline-copy">
-                            <strong>{discipline.name}</strong>
-                            <span>{discipline.professor}</span>
-                            <span className="discipline-room">
-                              {discipline.room}
+                            <strong>
+                              {discipline.name}
+                              {isElective && (
+                                <em className="elective-badge">Optativa</em>
+                              )}
+                            </strong>
+                            <span>
+                              {selectedOffering?.professor ??
+                                (hasMultipleOfferings
+                                  ? `${professorCount} professores disponíveis`
+                                  : discipline.professor)}
                             </span>
-                            <small>{formatTimes(discipline.times)}</small>
+                            <span className="discipline-room">
+                              {selectedOffering?.room ??
+                                (hasMultipleOfferings
+                                  ? "Escolha a turma ao matricular"
+                                  : discipline.room)}
+                            </span>
+                            <small>
+                              {selectedOffering
+                                ? formatTimes(selectedOffering.times)
+                                : hasMultipleOfferings
+                                  ? "Professor e horário serão escolhidos na próxima etapa"
+                                  : formatTimes(discipline.times)}
+                            </small>
                           </span>
                         </label>
+                        {hasMultipleOfferings && isSelected && (
+                          <button
+                            className="change-offering-button"
+                            type="button"
+                            onClick={() => setPendingDisciplineId(discipline.id)}
+                          >
+                            Trocar professor ou turma
+                          </button>
+                        )}
                         <div className="prerequisite-row">
                           <label className="completed-check">
                             <input
@@ -1004,6 +1622,24 @@ export default function Home() {
                 </div>
               </section>
             ))}
+            {visibleGroupedDisciplines.length === 0 && (
+              <div className="tab-empty-state">
+                <strong>
+                  {catalogTab === "completed"
+                    ? "Nenhuma disciplina concluída"
+                    : catalogTab === "conflict-free"
+                      ? "Nenhuma matéria encaixa na grade"
+                      : "Nenhuma disciplina liberada"}
+                </strong>
+                <p>
+                  {catalogTab === "completed"
+                    ? "Marque “Já paguei” nas matérias concluídas para vê-las aqui."
+                    : catalogTab === "conflict-free"
+                      ? "Remova ou troque alguma turma selecionada para abrir novos horários."
+                      : "Marque as matérias já pagas para liberar novos pré-requisitos."}
+                </p>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -1066,8 +1702,9 @@ export default function Home() {
               {hours.map((hour) => (
                 <div className="calendar-row" key={hour}>
                   <div className="time-label">
-                    <strong>{hour}h</strong>
-                    <span>{hour + 1}h</span>
+                    <strong>
+                      {hour}:00 - {hour + 1}:00
+                    </strong>
                   </div>
                   {days.map((day) => (
                     <div className="hour-cell" key={`${day}-${hour}`} />
@@ -1100,6 +1737,15 @@ export default function Home() {
                       }
                       aria-label={`${event.discipline.name}, ${days[event.day]}, ${event.start}h às ${event.end}h, ${room}`}
                     >
+                      <button
+                        type="button"
+                        className="event-remove-button"
+                        onClick={() => toggleDiscipline(event.discipline.id)}
+                        aria-label={`Remover ${event.discipline.name} da grade`}
+                        title={`Remover ${event.discipline.name}`}
+                      >
+                        ×
+                      </button>
                       <div className="event-time">
                         {event.start}h–{event.end}h
                       </div>
@@ -1128,6 +1774,90 @@ export default function Home() {
           </p>
         </section>
       </section>
+
+      {pendingDiscipline?.offerings && (
+        <div
+          className="offering-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setPendingDisciplineId(null);
+            }
+          }}
+        >
+          <section
+            className="offering-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offering-modal-title"
+          >
+            <button
+              className="modal-close"
+              type="button"
+              aria-label="Fechar seleção de turma"
+              onClick={() => setPendingDisciplineId(null)}
+            >
+              ×
+            </button>
+            <p className="panel-kicker">Escolha de turma</p>
+            <h2 id="offering-modal-title">{pendingDiscipline.name}</h2>
+            <p className="modal-description">
+              Esta disciplina possui mais de um professor disponível. Escolha a
+              turma que deseja adicionar à grade.
+              {catalogTab === "conflict-free" &&
+                " As opções que conflitam com sua grade estão desativadas."}
+            </p>
+            <div className="offering-options">
+              {pendingDiscipline.offerings.map((offering) => {
+                const isCurrent =
+                  selectedOfferingIds[pendingDiscipline.id] === offering.id;
+                const hasScheduleConflict = offering.times.some((time) =>
+                  events.some(
+                    (event) =>
+                      event.discipline.id !== pendingDiscipline.id &&
+                      event.day === time.day &&
+                      event.start < time.end &&
+                      time.start < event.end,
+                  ),
+                );
+                const isDisabled =
+                  catalogTab === "conflict-free" && hasScheduleConflict;
+                return (
+                  <button
+                    className={`offering-option${
+                      isCurrent ? " is-current" : ""
+                    }${hasScheduleConflict ? " has-schedule-conflict" : ""}`}
+                    type="button"
+                    key={offering.id}
+                    disabled={isDisabled}
+                    onClick={() =>
+                      chooseOffering(pendingDiscipline.id, offering.id)
+                    }
+                  >
+                    <span className="offering-check" aria-hidden="true">
+                      {isCurrent ? "✓" : ""}
+                    </span>
+                    <span className="offering-copy">
+                      <strong>{offering.professor}</strong>
+                      {offering.label && <em>{offering.label}</em>}
+                      <span>{formatTimes(offering.times)}</span>
+                      <small>{offering.room}</small>
+                      <b
+                        className={`offering-compatibility ${
+                          hasScheduleConflict ? "is-conflicting" : "is-compatible"
+                        }`}
+                      >
+                        {hasScheduleConflict
+                          ? "Conflita com sua grade"
+                          : "Compatível com sua grade"}
+                      </b>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
