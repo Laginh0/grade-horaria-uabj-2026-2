@@ -12,6 +12,7 @@ Montador interativo de grade semanal para Engenharia de Computação da UABJ.
 - calendário semanal de segunda a sexta, das 7h às 19h;
 - identificação visual de conflitos de horário;
 - filtros para matérias concluídas, disponíveis e sem conflitos;
+- prioridades de 1 a 5 e sugestão da próxima matéria possível sem alterar a grade;
 - acompanhamento de pré-requisitos e disciplinas optativas;
 - modo escuro;
 - autosave no navegador;

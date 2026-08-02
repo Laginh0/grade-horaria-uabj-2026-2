@@ -36,13 +36,31 @@ type DisplayEvent = ClassTime & {
 };
 
 type CatalogTab = "all" | "completed" | "eligible" | "conflict-free";
+type CoursePriority = 1 | 2 | 3 | 4 | 5;
 
 type SavedListState = {
   version?: number;
   selectedIds?: string[];
   completedIds?: string[];
   selectedOfferingIds?: Record<string, string>;
+  priorities?: Record<string, number>;
   catalogTab?: CatalogTab;
+};
+
+const defaultCoursePriority: CoursePriority = 3;
+const priorityOptions: Array<{ value: CoursePriority; label: string }> = [
+  { value: 5, label: "5 · Máxima" },
+  { value: 4, label: "4 · Alta" },
+  { value: 3, label: "3 · Média" },
+  { value: 2, label: "2 · Baixa" },
+  { value: 1, label: "1 · Mínima" },
+];
+const priorityNames: Record<CoursePriority, string> = {
+  1: "Mínima",
+  2: "Baixa",
+  3: "Média",
+  4: "Alta",
+  5: "Máxima",
 };
 
 const progressStorageKey = "grade-uabj-2026-2";
@@ -937,6 +955,13 @@ export default function Home() {
   const [selectedOfferingIds, setSelectedOfferingIds] = useState<
     Record<string, string>
   >({});
+  const [coursePriorities, setCoursePriorities] = useState<
+    Record<string, CoursePriority>
+  >({});
+  const [suggestedDisciplineId, setSuggestedDisciplineId] = useState<
+    string | null
+  >(null);
+  const [suggestionAttempted, setSuggestionAttempted] = useState(false);
   const [pendingDisciplineId, setPendingDisciplineId] = useState<string | null>(
     null,
   );
@@ -1019,9 +1044,20 @@ export default function Home() {
           restoredOfferings[id] =
             validOffering?.id ?? discipline.offerings[0].id;
         });
+        const restoredPriorities = Object.fromEntries(
+          Object.entries(parsed.priorities ?? {}).filter(
+            ([id, priority]) =>
+              validIds.has(id) &&
+              Number.isInteger(priority) &&
+              priority >= 1 &&
+              priority <= 5 &&
+              priority !== defaultCoursePriority,
+          ),
+        ) as Record<string, CoursePriority>;
         setCompletedIds(restoredCompleted);
         setSelectedIds(restoredSelected);
         setSelectedOfferingIds(restoredOfferings);
+        setCoursePriorities(restoredPriorities);
         if (
           parsed.catalogTab === "all" ||
           parsed.catalogTab === "completed" ||
@@ -1048,6 +1084,7 @@ export default function Home() {
         selectedIds: [...selectedIds],
         completedIds: [...completedIds],
         selectedOfferingIds,
+        priorities: coursePriorities,
         catalogTab,
       });
       let localSaved = false;
@@ -1070,7 +1107,14 @@ export default function Home() {
       );
     }, 220);
     return () => window.clearTimeout(saveTimer);
-  }, [catalogTab, completedIds, isHydrated, selectedIds, selectedOfferingIds]);
+  }, [
+    catalogTab,
+    completedIds,
+    coursePriorities,
+    isHydrated,
+    selectedIds,
+    selectedOfferingIds,
+  ]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -1274,6 +1318,66 @@ export default function Home() {
     [catalogTab, completedIds, conflictFreeIds, groupedDisciplines],
   );
 
+  const suggestedDiscipline = useMemo(
+    () =>
+      disciplines.find(
+        (discipline) => discipline.id === suggestedDisciplineId,
+      ) ?? null,
+    [suggestedDisciplineId],
+  );
+
+  const suggestedOffering = useMemo(() => {
+    if (!suggestedDiscipline?.offerings?.length) return undefined;
+    return suggestedDiscipline.offerings.find(
+      (offering) =>
+        !offering.times.some((time) =>
+          events.some(
+            (event) =>
+              event.discipline.id !== suggestedDiscipline.id &&
+              event.day === time.day &&
+              event.start < time.end &&
+              time.start < event.end,
+          ),
+        ),
+    );
+  }, [events, suggestedDiscipline]);
+
+  const suggestedPriority = suggestedDiscipline
+    ? (coursePriorities[suggestedDiscipline.id] ?? defaultCoursePriority)
+    : defaultCoursePriority;
+  const suggestedTimes = suggestedDiscipline
+    ? (suggestedOffering?.times ?? suggestedDiscipline.times)
+    : [];
+  const suggestedProfessor = suggestedDiscipline
+    ? (suggestedOffering?.professor ?? suggestedDiscipline.professor)
+    : "";
+
+  const updateCoursePriority = (id: string, priority: CoursePriority) => {
+    setCoursePriorities((current) => {
+      const next = { ...current };
+      if (priority === defaultCoursePriority) delete next[id];
+      else next[id] = priority;
+      return next;
+    });
+  };
+
+  const suggestDisciplineByPriority = () => {
+    setSuggestionAttempted(true);
+    const [suggestion] = disciplines
+      .filter((discipline) => conflictFreeIds.has(discipline.id))
+      .sort((first, second) => {
+        const priorityDifference =
+          (coursePriorities[second.id] ?? defaultCoursePriority) -
+          (coursePriorities[first.id] ?? defaultCoursePriority);
+        if (priorityDifference !== 0) return priorityDifference;
+        const periodDifference =
+          periodOrder.indexOf(first.period) - periodOrder.indexOf(second.period);
+        if (periodDifference !== 0) return periodDifference;
+        return first.name.localeCompare(second.name, "pt-BR");
+      });
+    setSuggestedDisciplineId(suggestion?.id ?? null);
+  };
+
   const toggleDiscipline = (id: string) => {
     if (completedIds.has(id)) return;
     const missing = (prerequisiteIds[id] ?? []).filter(
@@ -1361,9 +1465,22 @@ export default function Home() {
       );
       restoredOfferings[id] = validOffering?.id ?? discipline.offerings[0].id;
     });
+    const restoredPriorities = Object.fromEntries(
+      Object.entries(parsed.priorities ?? {}).filter(
+        ([id, priority]) =>
+          validIds.has(id) &&
+          Number.isInteger(priority) &&
+          priority >= 1 &&
+          priority <= 5 &&
+          priority !== defaultCoursePriority,
+      ),
+    ) as Record<string, CoursePriority>;
     setCompletedIds(restoredCompleted);
     setSelectedIds(restoredSelected);
     setSelectedOfferingIds(restoredOfferings);
+    setCoursePriorities(restoredPriorities);
+    setSuggestedDisciplineId(null);
+    setSuggestionAttempted(false);
     if (
       parsed.catalogTab === "all" ||
       parsed.catalogTab === "completed" ||
@@ -1379,6 +1496,9 @@ export default function Home() {
     selectedIds: [...selectedIds],
     completedIds: [...completedIds],
     selectedOfferingIds,
+    ...(Object.keys(coursePriorities).length > 0
+      ? { priorities: coursePriorities }
+      : {}),
     catalogTab,
   });
 
@@ -1391,6 +1511,7 @@ export default function Home() {
       selectedIds: [...selectedIds],
       completedIds: [...completedIds],
       selectedOfferingIds,
+      priorities: coursePriorities,
       catalogTab,
       selectedDisciplines: disciplines
         .filter((discipline) => selectedIds.has(discipline.id))
@@ -1778,6 +1899,54 @@ export default function Home() {
             </button>
           </div>
 
+          <section
+            className="priority-suggestion"
+            aria-labelledby="priority-suggestion-title"
+          >
+            <div className="priority-suggestion-heading">
+              <div>
+                <span>Recomendador</span>
+                <strong id="priority-suggestion-title">
+                  Próxima matéria possível
+                </strong>
+              </div>
+              <button type="button" onClick={suggestDisciplineByPriority}>
+                Sugerir matéria
+              </button>
+            </div>
+            {suggestedDiscipline ? (
+              <div
+                className="priority-suggestion-result"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="suggestion-star" aria-hidden="true">
+                  ★
+                </span>
+                <div>
+                  <strong>{suggestedDiscipline.name}</strong>
+                  <span>
+                    Prioridade {suggestedPriority} ·{" "}
+                    {priorityNames[suggestedPriority]}
+                  </span>
+                  <small>
+                    {suggestedProfessor} · {formatTimes(suggestedTimes)}
+                  </small>
+                  <em>
+                    Pré-requisitos atendidos e uma turma encaixa na grade atual.
+                    Nada foi alterado.
+                  </em>
+                </div>
+              </div>
+            ) : (
+              <p className="priority-suggestion-empty" role="status">
+                {suggestionAttempted
+                  ? "Nenhuma matéria disponível encaixa na grade atual."
+                  : "A sugestão escolhe a maior prioridade entre as matérias liberadas e sem conflito."}
+              </p>
+            )}
+          </section>
+
           <div
             className="discipline-list"
             id="discipline-tab-panel"
@@ -1832,6 +2001,10 @@ export default function Home() {
                           isSelected ? " is-selected" : ""
                         }${isCompleted ? " is-completed" : ""}${
                           isLocked ? " is-locked" : ""
+                        }${
+                          suggestedDisciplineId === discipline.id
+                            ? " is-suggested"
+                            : ""
                         }`}
                         key={discipline.id}
                         style={
@@ -1886,6 +2059,30 @@ export default function Home() {
                             Trocar professor ou turma
                           </button>
                         )}
+                        <div className="priority-control">
+                          <label htmlFor={`priority-${discipline.id}`}>
+                            <span>Prioridade</span>
+                            <select
+                              id={`priority-${discipline.id}`}
+                              value={
+                                coursePriorities[discipline.id] ??
+                                defaultCoursePriority
+                              }
+                              onChange={(event) =>
+                                updateCoursePriority(
+                                  discipline.id,
+                                  Number(event.target.value) as CoursePriority,
+                                )
+                              }
+                            >
+                              {priorityOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
                         <div className="prerequisite-row">
                           <label className="completed-check">
                             <input

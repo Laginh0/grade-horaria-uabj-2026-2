@@ -18,6 +18,7 @@ type SharedGradeState = {
   selectedIds: string[];
   completedIds: string[];
   selectedOfferingIds: Record<string, string>;
+  priorities?: Record<string, number>;
   catalogTab: "all" | "completed" | "eligible" | "conflict-free";
 };
 
@@ -30,6 +31,23 @@ const normalizeIds = (value: unknown) => {
     )
     .sort()
     .slice(0, 60);
+};
+
+const normalizePriorities = (value: unknown) => {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(
+        ([id, priority]) =>
+          /^[a-z0-9-]{1,80}$/.test(id) &&
+          Number.isInteger(priority) &&
+          Number(priority) >= 1 &&
+          Number(priority) <= 5 &&
+          priority !== 3,
+      )
+      .sort(([first], [second]) => first.localeCompare(second))
+      .slice(0, 60),
+  ) as Record<string, number>;
 };
 
 const normalizeState = (value: unknown): SharedGradeState | null => {
@@ -61,12 +79,14 @@ const normalizeState = (value: unknown): SharedGradeState | null => {
     input.catalogTab === "conflict-free"
       ? input.catalogTab
       : "all";
+  const priorities = normalizePriorities(input.priorities);
 
   return {
     version: 3,
     selectedIds,
     completedIds,
     selectedOfferingIds,
+    ...(Object.keys(priorities).length > 0 ? { priorities } : {}),
     catalogTab,
   };
 };
