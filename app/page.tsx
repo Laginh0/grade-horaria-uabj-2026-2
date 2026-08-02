@@ -514,7 +514,7 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
   {
     id: "fisica-3",
     period: "3º período",
-    name: "Física 3 (1)",
+    name: "Física 3",
     professor: "Elaine Oliveira da Silva",
     room: "AEB-02B",
     offerings: [
