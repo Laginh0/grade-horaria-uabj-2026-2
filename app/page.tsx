@@ -1689,6 +1689,9 @@ export default function Home() {
             </div>
           )}
 
+          <p className="mobile-scroll-hint" aria-hidden="true">
+            <span>↔</span> Deslize a grade para ver os outros dias
+          </p>
           <div className="calendar-scroll">
             <div className="calendar" aria-label="Calendário de segunda a sexta">
               <div className="calendar-corner">Horário</div>

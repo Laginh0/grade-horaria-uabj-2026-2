@@ -27,6 +27,7 @@ html {
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: clip;
   background: var(--canvas);
 }
 
@@ -465,9 +466,12 @@ input:focus-visible,
 
 .discipline-list {
   max-height: calc(100vh - 247px);
+  min-height: 0;
   padding-right: 10px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  contain: layout paint;
+  scrollbar-gutter: stable;
   scrollbar-color: #cdd5de transparent;
   scrollbar-width: thin;
 }
@@ -870,11 +874,16 @@ input:focus-visible,
 .calendar-scroll {
   margin-top: 14px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
   border: 1px solid #dbe2e9;
   border-radius: 14px;
   background: #ffffff;
   scrollbar-color: #c3cdd7 #eef1f4;
   scrollbar-width: thin;
+}
+
+.mobile-scroll-hint {
+  display: none;
 }
 
 .calendar {
@@ -1654,6 +1663,14 @@ input:focus-visible,
   color: #8c9ca9;
 }
 
+:root[data-theme="dark"] .mobile-scroll-hint {
+  color: #8fa0ae;
+}
+
+:root[data-theme="dark"] .mobile-scroll-hint span {
+  color: #b8df67;
+}
+
 :root[data-theme="dark"] .offering-modal {
   border-color: #304351;
   background: #101d28;
@@ -1782,7 +1799,7 @@ input:focus-visible,
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
-    max-height: 540px;
+    max-height: min(540px, 62svh);
   }
 
   .period-group + .period-group {
@@ -1797,7 +1814,7 @@ input:focus-visible,
 
 @media (max-width: 560px) {
   .hero {
-    padding: 18px 16px 24px;
+    padding: 16px 14px 22px;
   }
 
   .brand-line {
@@ -1808,6 +1825,13 @@ input:focus-visible,
 
   .brand-identity {
     align-items: flex-start;
+    min-width: 0;
+  }
+
+  .brand-identity > span:last-child {
+    max-width: 205px;
+    font-size: 9px;
+    letter-spacing: 0.055em;
   }
 
   .theme-toggle {
@@ -1843,11 +1867,12 @@ input:focus-visible,
   }
 
   .hero-content {
-    margin-top: 24px;
+    margin-top: 21px;
   }
 
   .hero h1 {
-    font-size: 39px;
+    max-width: 330px;
+    font-size: clamp(32px, 10vw, 37px);
   }
 
   .hero-copy {
@@ -1855,6 +1880,7 @@ input:focus-visible,
   }
 
   .stats {
+    gap: 8px;
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1864,8 +1890,8 @@ input:focus-visible,
   }
 
   .stat-card {
-    min-height: 94px;
-    padding: 14px;
+    min-height: 88px;
+    padding: 12px;
   }
 
   .stat-card strong {
@@ -1874,6 +1900,8 @@ input:focus-visible,
 
   .discipline-list {
     display: block;
+    max-height: min(520px, 62svh);
+    padding-right: 7px;
   }
 
   .progress-backup {
@@ -1890,16 +1918,67 @@ input:focus-visible,
   }
 
   .calendar-heading {
-    align-items: flex-end;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .legend {
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 7px;
   }
 
+  .workspace {
+    padding: 8px;
+  }
+
+  .catalog-panel {
+    padding: 16px 7px 7px 16px;
+  }
+
+  .catalog-help,
+  .progress-backup,
+  .catalog-tabs,
+  .autosave-indicator,
+  .file-message {
+    margin-right: 8px;
+  }
+
+  .calendar-panel {
+    margin-top: 8px;
+    padding: 14px 10px 12px;
+  }
+
+  .mobile-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 11px 2px -5px;
+    color: #778492;
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .mobile-scroll-hint span {
+    color: #57771c;
+    font-size: 15px;
+  }
+
   .calendar {
-    min-width: 826px;
+    grid-template-columns: 92px repeat(5, 116px);
+    min-width: 672px;
+  }
+
+  .events-layer {
+    left: 92px;
+  }
+
+  .empty-calendar {
+    left: calc(50% + 46px);
+  }
+
+  .time-label strong {
+    font-size: 11px;
   }
 
   .day-heading {
