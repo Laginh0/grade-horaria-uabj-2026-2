@@ -322,6 +322,7 @@ input:focus-visible,
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-width: 0;
   padding: 7px 10px;
   border: 1px solid #cbd5de;
   border-radius: 9px;
@@ -330,6 +331,7 @@ input:focus-visible,
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .file-button span {
@@ -354,9 +356,9 @@ input:focus-visible,
 
 .progress-backup {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 10px;
   margin: -4px 12px 14px 0;
   padding: 11px 12px;
   border: 1px solid #d6e1ea;
@@ -376,17 +378,15 @@ input:focus-visible,
 }
 
 .progress-backup-copy span {
-  max-width: 330px;
+  max-width: none;
   color: var(--muted);
   font-size: 10px;
   line-height: 1.35;
 }
 
 .progress-backup-actions {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 7px;
 }
 
@@ -1901,8 +1901,7 @@ input:focus-visible,
   }
 
   .progress-backup-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 
   .period-group + .period-group {
