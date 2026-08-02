@@ -50,6 +50,145 @@ const progressCookieName = "grade_uabj_2026_2";
 const cookieLifetimeSeconds = 60 * 60 * 24 * 365;
 const sharingApiUrl =
   "https://grade-computacao-uabj-2026.linuxpenguin12362015.chatgpt.site/api/share-codes";
+const securitySessionUrl =
+  "https://grade-computacao-uabj-2026.linuxpenguin12362015.chatgpt.site/api/security/session";
+
+let sharingSessionToken = "";
+let sharingSessionExpiresAt = 0;
+let sharingSessionPromise: Promise<string> | null = null;
+
+const digestHasLeadingZeroBits = (digest: Uint8Array, difficulty: number) => {
+  const wholeBytes = Math.floor(difficulty / 8);
+  const remainingBits = difficulty % 8;
+  for (let index = 0; index < wholeBytes; index += 1) {
+    if (digest[index] !== 0) return false;
+  }
+  if (remainingBits === 0) return true;
+  return (digest[wholeBytes] & (0xff << (8 - remainingBits))) === 0;
+};
+
+const solveSecurityChallenge = async (
+  challenge: string,
+  difficulty: number,
+) => {
+  if (!window.isSecureContext || !window.crypto?.subtle) {
+    throw new Error("Abra o site oficial usando uma conexão HTTPS.");
+  }
+  if (!Number.isInteger(difficulty) || difficulty < 8 || difficulty > 20) {
+    throw new Error("O servidor enviou uma verificação inválida.");
+  }
+
+  const encoder = new TextEncoder();
+  const batchSize = 64;
+  const maximumCounter = 2_000_000;
+  for (let batchStart = 0; batchStart < maximumCounter; batchStart += batchSize) {
+    const counters = Array.from(
+      { length: batchSize },
+      (_, index) => batchStart + index,
+    );
+    const digests = await Promise.all(
+      counters.map(async (counter) =>
+        new Uint8Array(
+          await window.crypto.subtle.digest(
+            "SHA-256",
+            encoder.encode(`${challenge}.${counter}`),
+          ),
+        ),
+      ),
+    );
+    const matchIndex = digests.findIndex((digest) =>
+      digestHasLeadingZeroBits(digest, difficulty),
+    );
+    if (matchIndex >= 0) return counters[matchIndex];
+    if (batchStart % 4_096 === 0) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+    }
+  }
+  throw new Error("Não foi possível concluir a verificação segura.");
+};
+
+const createSharingSession = async () => {
+  const challengeResponse = await fetch(securitySessionUrl, {
+    cache: "no-store",
+  });
+  const challengeResult = (await challengeResponse.json()) as {
+    challenge?: string;
+    difficulty?: number;
+    error?: string;
+  };
+  if (
+    !challengeResponse.ok ||
+    !challengeResult.challenge ||
+    typeof challengeResult.difficulty !== "number"
+  ) {
+    throw new Error(
+      challengeResult.error ?? "Não foi possível verificar o site oficial.",
+    );
+  }
+
+  const counter = await solveSecurityChallenge(
+    challengeResult.challenge,
+    challengeResult.difficulty,
+  );
+  const sessionResponse = await fetch(securitySessionUrl, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ challenge: challengeResult.challenge, counter }),
+  });
+  const sessionResult = (await sessionResponse.json()) as {
+    token?: string;
+    expiresAt?: number;
+    error?: string;
+  };
+  if (
+    !sessionResponse.ok ||
+    !sessionResult.token ||
+    typeof sessionResult.expiresAt !== "number"
+  ) {
+    throw new Error(
+      sessionResult.error ?? "A sessão segura não pôde ser criada.",
+    );
+  }
+  sharingSessionToken = sessionResult.token;
+  sharingSessionExpiresAt = sessionResult.expiresAt;
+  return sharingSessionToken;
+};
+
+const getSharingSession = async (forceRefresh = false) => {
+  const now = Math.floor(Date.now() / 1000);
+  if (
+    !forceRefresh &&
+    sharingSessionToken &&
+    sharingSessionExpiresAt > now + 30
+  ) {
+    return sharingSessionToken;
+  }
+  if (!sharingSessionPromise || forceRefresh) {
+    sharingSessionPromise = createSharingSession().finally(() => {
+      sharingSessionPromise = null;
+    });
+  }
+  return sharingSessionPromise;
+};
+
+const secureSharingFetch = async (
+  url: string,
+  init: RequestInit = {},
+  canRetry = true,
+): Promise<Response> => {
+  const token = await getSharingSession();
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(url, { ...init, headers, cache: "no-store" });
+  if (response.status === 401 && canRetry) {
+    sharingSessionToken = "";
+    sharingSessionExpiresAt = 0;
+    await getSharingSession(true);
+    return secureSharingFetch(url, init, false);
+  }
+  return response;
+};
 
 const readProgressCookie = () => {
   if (typeof document === "undefined") return null;
@@ -291,7 +430,7 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
   {
     id: "fisica-2",
     period: "2º período",
-    name: "Física 2 (1)",
+    name: "Física 2",
     professor: "Elaine Oliveira da Silva",
     room: "AEB-05C",
     offerings: [
@@ -1290,7 +1429,7 @@ export default function Home() {
     setIsCloudBusy(true);
     setCloudMessage("Salvando uma cópia permanente na nuvem...");
     try {
-      const response = await fetch(sharingApiUrl, {
+      const response = await secureSharingFetch(sharingApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentShareState()),
@@ -1321,7 +1460,7 @@ export default function Home() {
     setIsCloudBusy(true);
     setCloudMessage("Buscando a grade na nuvem...");
     try {
-      const response = await fetch(
+      const response = await secureSharingFetch(
         `${sharingApiUrl}?code=${encodeURIComponent(cloudCodeInput)}`,
       );
       const result = (await response.json()) as {
@@ -1506,12 +1645,13 @@ export default function Home() {
           </div>
           <section className="cloud-sharing" aria-labelledby="cloud-sharing-title">
             <div className="cloud-sharing-copy">
-              <span className="cloud-badge">Nuvem</span>
+              <span className="cloud-badge">Nuvem protegida</span>
               <div>
                 <strong id="cloud-sharing-title">Compartilhar com código</strong>
                 <p>
                   Gere cinco dígitos permanentes ou digite um código recebido para
-                  recuperar a grade em outro dispositivo.
+                  recuperar a grade em outro dispositivo. O acesso usa uma sessão
+                  curta verificada e os dados ficam criptografados no servidor.
                 </p>
               </div>
             </div>
