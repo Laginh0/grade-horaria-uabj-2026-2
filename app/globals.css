@@ -379,9 +379,9 @@ select:focus-visible,
   gap: 10px;
   margin: 0 12px 14px 0;
   padding: 12px;
-  border: 1px solid #cddfc2;
+  border: 1px solid #d6e1ea;
   border-radius: 12px;
-  background: linear-gradient(145deg, #f7fbf1, #f0f7e7);
+  background: #f6f9fb;
 }
 
 .cloud-sharing-copy {
@@ -396,13 +396,13 @@ select:focus-visible,
 
 .cloud-sharing-copy strong {
   display: block;
-  color: #263b25;
+  color: #263c50;
   font-size: 12px;
 }
 
 .cloud-sharing-copy p {
   margin: 4px 0 0;
-  color: #63725d;
+  color: #657483;
   font-size: 10px;
   line-height: 1.4;
 }
@@ -411,8 +411,8 @@ select:focus-visible,
   flex: 0 0 auto;
   padding: 3px 6px;
   border-radius: 6px;
-  color: #3e6319;
-  background: #dff0c8;
+  color: #526476;
+  background: #e5ebf0;
   font-size: 8px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -422,10 +422,10 @@ select:focus-visible,
 .cloud-create-button,
 .cloud-code-form button,
 .generated-code button {
-  border: 1px solid #92ad70;
+  border: 1px solid #cbd5de;
   border-radius: 8px;
-  color: #ffffff;
-  background: #547c29;
+  color: #23384c;
+  background: #edf2f6;
   cursor: pointer;
   font-size: 10px;
   font-weight: 850;
@@ -439,7 +439,8 @@ select:focus-visible,
 .cloud-create-button:hover,
 .cloud-code-form button:hover,
 .generated-code button:hover {
-  background: #42681e;
+  border-color: #9eacba;
+  background: #e4ebf1;
 }
 
 .cloud-create-button:disabled,
@@ -454,7 +455,7 @@ select:focus-visible,
   justify-content: space-between;
   gap: 10px;
   padding: 9px 10px;
-  border: 1px solid #bdd29f;
+  border: 1px solid #d6e1ea;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.78);
 }
@@ -465,15 +466,15 @@ select:focus-visible,
 }
 
 .generated-code span {
-  color: #6d7b65;
+  color: #6b7885;
   font-size: 8px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .generated-code output {
-  color: #203b18;
-  font-size: 24px;
+  color: #263c50;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 0.16em;
   line-height: 1;
@@ -490,7 +491,7 @@ select:focus-visible,
 }
 
 .cloud-code-form label {
-  color: #4e6149;
+  color: #526476;
   font-size: 9px;
   font-weight: 850;
 }
@@ -504,9 +505,9 @@ select:focus-visible,
 .cloud-code-form input {
   min-width: 0;
   padding: 8px 9px;
-  border: 1px solid #b8caaa;
+  border: 1px solid #cbd5de;
   border-radius: 8px;
-  color: #203324;
+  color: #263c50;
   background: #ffffff;
   font-size: 15px;
   font-weight: 900;
@@ -521,7 +522,7 @@ select:focus-visible,
 }
 
 .cloud-code-form small {
-  color: #73806d;
+  color: #6f7d8a;
   font-size: 8px;
   line-height: 1.35;
 }
@@ -530,8 +531,8 @@ select:focus-visible,
   margin: 0;
   padding: 7px 8px;
   border-radius: 7px;
-  color: #42563b;
-  background: rgba(221, 237, 204, 0.82);
+  color: #3e566c;
+  background: #e8eff5;
   font-size: 9px;
   font-weight: 750;
   line-height: 1.35;
@@ -629,6 +630,10 @@ select:focus-visible,
   background: #dff0c3;
 }
 
+.catalog-tabs .tab-unavailable {
+  grid-column: 1 / -1;
+}
+
 .priority-suggestion {
   display: grid;
   gap: 9px;
@@ -640,15 +645,19 @@ select:focus-visible,
 }
 
 .priority-suggestion-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
   gap: 9px;
 }
 
-.priority-suggestion-heading > div {
+.priority-suggestion-heading > div:first-child {
   display: grid;
   gap: 2px;
+}
+
+.priority-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .priority-suggestion-heading span {
@@ -678,6 +687,12 @@ select:focus-visible,
 
 .priority-suggestion-heading button:hover {
   background: #45651e;
+}
+
+.priority-suggestion-heading button.is-editing {
+  border-color: #8a6d22;
+  color: #56410d;
+  background: #f6e8af;
 }
 
 .priority-suggestion-result {
@@ -863,6 +878,12 @@ select:focus-visible,
   background: #fafbfc;
 }
 
+.discipline-card.is-unavailable:not(.is-completed) {
+  border-color: #e5c5ca;
+  border-left-color: #b75b68;
+  background: #fff8f9;
+}
+
 .discipline-card.is-suggested {
   border-color: #7ca53d;
   box-shadow: 0 0 0 3px rgba(116, 158, 53, 0.18);
@@ -1005,6 +1026,11 @@ select:focus-visible,
   background: #fde8eb;
 }
 
+.status-unavailable {
+  color: #8a2f3b;
+  background: #f9dfe3;
+}
+
 .requirement-note {
   margin: 7px 0 0;
   padding: 6px 8px;
@@ -1030,6 +1056,22 @@ select:focus-visible,
   border-radius: 5px;
   color: #67501b;
   background: #f4e7b9;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.unavailable-badge {
+  display: inline-flex;
+  margin-left: 5px;
+  padding: 2px 5px;
+  transform: translateY(-1px);
+  border-radius: 5px;
+  color: #8a2f3b;
+  background: #f9dfe3;
   font-size: 8px;
   font-style: normal;
   font-weight: 900;
@@ -1716,47 +1758,62 @@ select:focus-visible,
 }
 
 :root[data-theme="dark"] .cloud-sharing {
-  border-color: #3b5330;
-  background: linear-gradient(145deg, #17251b, #132019);
+  border-color: #304454;
+  background: #101e29;
 }
 
 :root[data-theme="dark"] .cloud-sharing-copy strong {
-  color: #dce9d7;
+  color: #dbe5ed;
 }
 
 :root[data-theme="dark"] .cloud-sharing-copy p,
 :root[data-theme="dark"] .cloud-code-form small {
-  color: #96a590;
+  color: #92a3b1;
 }
 
 :root[data-theme="dark"] .cloud-badge {
-  color: #d6f2b5;
-  background: #314a25;
+  color: #bac8d3;
+  background: #263846;
+}
+
+:root[data-theme="dark"] .cloud-create-button,
+:root[data-theme="dark"] .cloud-code-form button,
+:root[data-theme="dark"] .generated-code button {
+  border-color: #405261;
+  color: #d7e0e8;
+  background: #182735;
+}
+
+:root[data-theme="dark"] .cloud-create-button:hover,
+:root[data-theme="dark"] .cloud-code-form button:hover,
+:root[data-theme="dark"] .generated-code button:hover {
+  border-color: #536a7d;
+  background: #213342;
 }
 
 :root[data-theme="dark"] .generated-code {
-  border-color: #40583a;
-  background: rgba(12, 25, 18, 0.82);
+  border-color: #304454;
+  background: #0e1a24;
 }
 
 :root[data-theme="dark"] .generated-code span,
 :root[data-theme="dark"] .cloud-code-form label {
-  color: #9cae95;
+  color: #9baab7;
 }
 
 :root[data-theme="dark"] .generated-code output {
-  color: #dff6cf;
+  color: #e2eaf1;
 }
 
 :root[data-theme="dark"] .cloud-code-form input {
-  border-color: #405842;
-  color: #e3eee4;
-  background: #0d1b14;
+  border-color: #405261;
+  color: #e1e9f0;
+  background: #0d1821;
 }
 
 :root[data-theme="dark"] .cloud-message {
-  color: #c3d8ba;
-  background: rgba(48, 73, 39, 0.72);
+  color: #bdd2e4;
+  background: #183047;
 }
 
 :root[data-theme="dark"] .autosave-indicator {
@@ -1766,6 +1823,11 @@ select:focus-visible,
 :root[data-theme="dark"] .elective-badge {
   color: #f2d88d;
   background: #493c1e;
+}
+
+:root[data-theme="dark"] .unavailable-badge {
+  color: #ffc2ca;
+  background: #53272d;
 }
 
 :root[data-theme="dark"] .catalog-tabs {
@@ -1821,6 +1883,12 @@ select:focus-visible,
 
 :root[data-theme="dark"] .priority-suggestion-heading button:hover {
   background: #c8eb91;
+}
+
+:root[data-theme="dark"] .priority-suggestion-heading button.is-editing {
+  border-color: #9b8445;
+  color: #f7e8b2;
+  background: #4d401d;
 }
 
 :root[data-theme="dark"] .priority-suggestion-result {
@@ -1891,6 +1959,12 @@ select:focus-visible,
 :root[data-theme="dark"] .discipline-card.is-locked {
   border-left-color: #536271;
   background: #101a23;
+}
+
+:root[data-theme="dark"] .discipline-card.is-unavailable:not(.is-completed) {
+  border-color: #57333a;
+  border-left-color: #b86773;
+  background: #24171b;
 }
 
 :root[data-theme="dark"] .discipline-card.is-suggested {
@@ -1971,6 +2045,11 @@ select:focus-visible,
 }
 
 :root[data-theme="dark"] .status-locked {
+  color: #ffc0c7;
+  background: #50242b;
+}
+
+:root[data-theme="dark"] .status-unavailable {
   color: #ffc0c7;
   background: #50242b;
 }

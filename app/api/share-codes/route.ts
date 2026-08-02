@@ -19,7 +19,12 @@ type SharedGradeState = {
   completedIds: string[];
   selectedOfferingIds: Record<string, string>;
   priorities?: Record<string, number>;
-  catalogTab: "all" | "completed" | "eligible" | "conflict-free";
+  catalogTab:
+    | "all"
+    | "completed"
+    | "eligible"
+    | "conflict-free"
+    | "unavailable";
 };
 
 const normalizeIds = (value: unknown) => {
@@ -30,7 +35,7 @@ const normalizeIds = (value: unknown) => {
         typeof id === "string" && /^[a-z0-9-]{1,80}$/.test(id),
     )
     .sort()
-    .slice(0, 60);
+    .slice(0, 120);
 };
 
 const normalizePriorities = (value: unknown) => {
@@ -42,11 +47,10 @@ const normalizePriorities = (value: unknown) => {
           /^[a-z0-9-]{1,80}$/.test(id) &&
           Number.isInteger(priority) &&
           Number(priority) >= 1 &&
-          Number(priority) <= 5 &&
-          priority !== 3,
+          Number(priority) <= 5,
       )
       .sort(([first], [second]) => first.localeCompare(second))
-      .slice(0, 60),
+      .slice(0, 120),
   ) as Record<string, number>;
 };
 
@@ -76,7 +80,8 @@ const normalizeState = (value: unknown): SharedGradeState | null => {
   const catalogTab =
     input.catalogTab === "completed" ||
     input.catalogTab === "eligible" ||
-    input.catalogTab === "conflict-free"
+    input.catalogTab === "conflict-free" ||
+    input.catalogTab === "unavailable"
       ? input.catalogTab
       : "all";
   const priorities = normalizePriorities(input.priorities);

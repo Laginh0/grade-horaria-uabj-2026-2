@@ -28,6 +28,7 @@ type Discipline = {
   color: number;
   times: ClassTime[];
   offerings?: CourseOffering[];
+  availability?: "offered" | "unavailable";
 };
 
 type DisplayEvent = ClassTime & {
@@ -35,7 +36,12 @@ type DisplayEvent = ClassTime & {
   key: string;
 };
 
-type CatalogTab = "all" | "completed" | "eligible" | "conflict-free";
+type CatalogTab =
+  | "all"
+  | "completed"
+  | "eligible"
+  | "conflict-free"
+  | "unavailable";
 type CoursePriority = 1 | 2 | 3 | 4 | 5;
 
 type SavedListState = {
@@ -47,7 +53,7 @@ type SavedListState = {
   catalogTab?: CatalogTab;
 };
 
-const defaultCoursePriority: CoursePriority = 3;
+const fallbackCoursePriority: CoursePriority = 3;
 const priorityOptions: Array<{ value: CoursePriority; label: string }> = [
   { value: 5, label: "5 · Máxima" },
   { value: 4, label: "4 · Alta" },
@@ -883,7 +889,7 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
   {
     id: "educacao-relacoes-etnicas-raciais",
     period: "Optativa 2",
-    name: "Educação das Relações Étnicas Raciais",
+    name: "Educação das Relações Étnico-Raciais",
     professor: "Sabi Bandiri",
     room: "AEB-08C",
     times: [t(1, 14, 16), t(2, 14, 16)],
@@ -912,12 +918,136 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     room: "AEB-04A",
     times: [t(2, 16, 18), t(3, 16, 18)],
   },
+  {
+    id: "calculo-4",
+    period: "Optativas indisponíveis",
+    name: "Cálculo Diferencial e Integral 4",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "circuitos-eletricos-2",
+    period: "Optativas indisponíveis",
+    name: "Circuitos Elétricos 2",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "desenho-tecnico",
+    period: "Optativas indisponíveis",
+    name: "Desenho Técnico",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "economia-aplicada-engenharia",
+    period: "Optativas indisponíveis",
+    name: "Economia Aplicada à Engenharia",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "eletronica-2",
+    period: "Optativas indisponíveis",
+    name: "Eletrônica 2",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "empreendedorismo-inovacao",
+    period: "Optativas indisponíveis",
+    name: "Empreendedorismo e Inovação Tecnológica",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "fisica-4",
+    period: "Optativas indisponíveis",
+    name: "Física Geral 4",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "libras",
+    period: "Optativas indisponíveis",
+    name: "Língua Brasileira de Sinais",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "metodos-gerenciais-manutencao",
+    period: "Optativas indisponíveis",
+    name: "Métodos Gerenciais em Manutenção",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "processamento-digital-sinais",
+    period: "Optativas indisponíveis",
+    name: "Processamento Digital de Sinais",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "prototipacao-circuitos-digitais",
+    period: "Optativas indisponíveis",
+    name: "Prototipação de Circuitos Digitais",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "robotica-industrial",
+    period: "Optativas indisponíveis",
+    name: "Robótica Industrial",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
+  {
+    id: "sistemas-probabilisticos",
+    period: "Optativas indisponíveis",
+    name: "Sistemas Probabilísticos",
+    professor: "Não ofertada em 2026.2",
+    room: "Sem turma disponível",
+    times: [],
+    availability: "unavailable",
+  },
 ];
 
 const disciplines: Discipline[] = rawDisciplines.map((discipline, index) => ({
   ...discipline,
   color: Math.round((index * 137.508 + 204) % 360),
 }));
+
+const disciplinesById = new Map(
+  disciplines.map((discipline) => [discipline.id, discipline]),
+);
+const unavailableDisciplineCount = disciplines.filter(
+  (discipline) => discipline.availability === "unavailable",
+).length;
 
 const periodOrder = [
   "1º período",
@@ -932,7 +1062,50 @@ const periodOrder = [
   "Optativa 1",
   "Optativa 2",
   "Optativa 3",
+  "Optativas indisponíveis",
 ];
+
+const curriculumPrioritiesByPeriod: Record<string, CoursePriority> = {
+  "1º período": 5,
+  "2º período": 5,
+  "3º período": 4,
+  "4º período": 4,
+  "5º período": 3,
+  "6º período": 3,
+  "7º período": 2,
+  "8º período": 2,
+  "9º período": 1,
+};
+
+const curriculumElectiveIds = new Set([
+  "calculo-4",
+  "circuitos-eletricos-2",
+  "complementos-matematica",
+  "desenho-tecnico",
+  "economia-aplicada-engenharia",
+  "educacao-relacoes-etnicas-raciais",
+  "eletronica-2",
+  "empreendedorismo-inovacao",
+  "fisica-4",
+  "libras",
+  "metodos-gerenciais-manutencao",
+  "processamento-digital-sinais",
+  "prototipacao-circuitos-digitais",
+  "robotica-industrial",
+  "sistemas-probabilisticos",
+]);
+
+const getDefaultCoursePriority = (
+  discipline: Discipline,
+): CoursePriority => {
+  if (discipline.availability === "unavailable") return 1;
+  if (discipline.period.startsWith("Optativa")) {
+    return curriculumElectiveIds.has(discipline.id) ? 3 : 2;
+  }
+  return (
+    curriculumPrioritiesByPeriod[discipline.period] ?? fallbackCoursePriority
+  );
+};
 
 const formatHour = (hour: number) => `${hour}h`;
 
@@ -962,6 +1135,7 @@ export default function Home() {
     string | null
   >(null);
   const [suggestionAttempted, setSuggestionAttempted] = useState(false);
+  const [isPriorityEditing, setIsPriorityEditing] = useState(false);
   const [pendingDisciplineId, setPendingDisciplineId] = useState<string | null>(
     null,
   );
@@ -1027,6 +1201,7 @@ export default function Home() {
           (parsed.selectedIds ?? []).filter(
             (id) =>
               validIds.has(id) &&
+              disciplinesById.get(id)?.availability !== "unavailable" &&
               !restoredCompleted.has(id) &&
               (prerequisiteIds[id] ?? []).every((prerequisiteId) =>
                 restoredCompleted.has(prerequisiteId),
@@ -1051,7 +1226,8 @@ export default function Home() {
               Number.isInteger(priority) &&
               priority >= 1 &&
               priority <= 5 &&
-              priority !== defaultCoursePriority,
+              priority !==
+                getDefaultCoursePriority(disciplinesById.get(id)!),
           ),
         ) as Record<string, CoursePriority>;
         setCompletedIds(restoredCompleted);
@@ -1062,7 +1238,8 @@ export default function Home() {
           parsed.catalogTab === "all" ||
           parsed.catalogTab === "completed" ||
           parsed.catalogTab === "eligible" ||
-          parsed.catalogTab === "conflict-free"
+          parsed.catalogTab === "conflict-free" ||
+          parsed.catalogTab === "unavailable"
         ) {
           setCatalogTab(parsed.catalogTab);
         }
@@ -1250,6 +1427,7 @@ export default function Home() {
     () =>
       disciplines.filter(
         (discipline) =>
+          discipline.availability !== "unavailable" &&
           !completedIds.has(discipline.id) &&
           (prerequisiteIds[discipline.id] ?? []).every((prerequisiteId) =>
             completedIds.has(prerequisiteId),
@@ -1262,6 +1440,7 @@ export default function Home() {
     const compatibleIds = new Set<string>();
     disciplines.forEach((discipline) => {
       if (
+        discipline.availability === "unavailable" ||
         selectedIds.has(discipline.id) ||
         completedIds.has(discipline.id) ||
         !(prerequisiteIds[discipline.id] ?? []).every((prerequisiteId) =>
@@ -1302,6 +1481,7 @@ export default function Home() {
             }
             if (catalogTab === "eligible") {
               return (
+                discipline.availability !== "unavailable" &&
                 !completedIds.has(discipline.id) &&
                 (prerequisiteIds[discipline.id] ?? []).every(
                   (prerequisiteId) => completedIds.has(prerequisiteId),
@@ -1310,6 +1490,9 @@ export default function Home() {
             }
             if (catalogTab === "conflict-free") {
               return conflictFreeIds.has(discipline.id);
+            }
+            if (catalogTab === "unavailable") {
+              return discipline.availability === "unavailable";
             }
             return true;
           }),
@@ -1343,8 +1526,9 @@ export default function Home() {
   }, [events, suggestedDiscipline]);
 
   const suggestedPriority = suggestedDiscipline
-    ? (coursePriorities[suggestedDiscipline.id] ?? defaultCoursePriority)
-    : defaultCoursePriority;
+    ? (coursePriorities[suggestedDiscipline.id] ??
+      getDefaultCoursePriority(suggestedDiscipline))
+    : fallbackCoursePriority;
   const suggestedTimes = suggestedDiscipline
     ? (suggestedOffering?.times ?? suggestedDiscipline.times)
     : [];
@@ -1353,9 +1537,11 @@ export default function Home() {
     : "";
 
   const updateCoursePriority = (id: string, priority: CoursePriority) => {
+    const discipline = disciplinesById.get(id);
+    if (!discipline) return;
     setCoursePriorities((current) => {
       const next = { ...current };
-      if (priority === defaultCoursePriority) delete next[id];
+      if (priority === getDefaultCoursePriority(discipline)) delete next[id];
       else next[id] = priority;
       return next;
     });
@@ -1367,8 +1553,8 @@ export default function Home() {
       .filter((discipline) => conflictFreeIds.has(discipline.id))
       .sort((first, second) => {
         const priorityDifference =
-          (coursePriorities[second.id] ?? defaultCoursePriority) -
-          (coursePriorities[first.id] ?? defaultCoursePriority);
+          (coursePriorities[second.id] ?? getDefaultCoursePriority(second)) -
+          (coursePriorities[first.id] ?? getDefaultCoursePriority(first));
         if (priorityDifference !== 0) return priorityDifference;
         const periodDifference =
           periodOrder.indexOf(first.period) - periodOrder.indexOf(second.period);
@@ -1380,12 +1566,12 @@ export default function Home() {
 
   const toggleDiscipline = (id: string) => {
     if (completedIds.has(id)) return;
+    const discipline = disciplinesById.get(id);
+    if (!discipline || discipline.availability === "unavailable") return;
     const missing = (prerequisiteIds[id] ?? []).filter(
       (prerequisiteId) => !completedIds.has(prerequisiteId),
     );
     if (missing.length > 0) return;
-    const discipline = disciplines.find((candidate) => candidate.id === id);
-    if (!discipline) return;
     if (selectedIds.has(id)) {
       setSelectedIds((current) => {
         const next = new Set(current);
@@ -1449,6 +1635,7 @@ export default function Home() {
       (parsed.selectedIds ?? []).filter(
         (id) =>
           validIds.has(id) &&
+          disciplinesById.get(id)?.availability !== "unavailable" &&
           !restoredCompleted.has(id) &&
           (prerequisiteIds[id] ?? []).every((prerequisiteId) =>
             restoredCompleted.has(prerequisiteId),
@@ -1472,7 +1659,7 @@ export default function Home() {
           Number.isInteger(priority) &&
           priority >= 1 &&
           priority <= 5 &&
-          priority !== defaultCoursePriority,
+          priority !== getDefaultCoursePriority(disciplinesById.get(id)!),
       ),
     ) as Record<string, CoursePriority>;
     setCompletedIds(restoredCompleted);
@@ -1485,7 +1672,8 @@ export default function Home() {
       parsed.catalogTab === "all" ||
       parsed.catalogTab === "completed" ||
       parsed.catalogTab === "eligible" ||
-      parsed.catalogTab === "conflict-free"
+      parsed.catalogTab === "conflict-free" ||
+      parsed.catalogTab === "unavailable"
     ) {
       setCatalogTab(parsed.catalogTab);
     }
@@ -1897,6 +2085,19 @@ export default function Home() {
             >
               Sem conflitos <span>{conflictFreeIds.size}</span>
             </button>
+            <button
+              id="tab-unavailable"
+              type="button"
+              role="tab"
+              aria-selected={catalogTab === "unavailable"}
+              aria-controls="discipline-tab-panel"
+              className={`tab-unavailable${
+                catalogTab === "unavailable" ? " is-active" : ""
+              }`}
+              onClick={() => setCatalogTab("unavailable")}
+            >
+              Indisponíveis <span>{unavailableDisciplineCount}</span>
+            </button>
           </div>
 
           <section
@@ -1910,9 +2111,21 @@ export default function Home() {
                   Próxima matéria possível
                 </strong>
               </div>
-              <button type="button" onClick={suggestDisciplineByPriority}>
-                Sugerir matéria
-              </button>
+              <div className="priority-actions">
+                <button
+                  type="button"
+                  className={isPriorityEditing ? "is-editing" : ""}
+                  aria-pressed={isPriorityEditing}
+                  onClick={() => setIsPriorityEditing((current) => !current)}
+                >
+                  {isPriorityEditing
+                    ? "Ocultar prioridades"
+                    : "Editar prioridades"}
+                </button>
+                <button type="button" onClick={suggestDisciplineByPriority}>
+                  Sugerir matéria
+                </button>
+              </div>
             </div>
             {suggestedDiscipline ? (
               <div
@@ -1963,12 +2176,16 @@ export default function Home() {
                   {items.map((discipline) => {
                     const isSelected = selectedIds.has(discipline.id);
                     const isCompleted = completedIds.has(discipline.id);
+                    const isUnavailable =
+                      discipline.availability === "unavailable";
                     const prerequisites = prerequisiteIds[discipline.id] ?? [];
                     const missingPrerequisites = prerequisites.filter(
                       (prerequisiteId) => !completedIds.has(prerequisiteId),
                     );
                     const isLocked =
-                      !isCompleted && missingPrerequisites.length > 0;
+                      !isCompleted &&
+                      !isUnavailable &&
+                      missingPrerequisites.length > 0;
                     const hasMultipleOfferings =
                       (discipline.offerings?.length ?? 0) > 1;
                     const selectedOffering = isSelected
@@ -2001,7 +2218,7 @@ export default function Home() {
                           isSelected ? " is-selected" : ""
                         }${isCompleted ? " is-completed" : ""}${
                           isLocked ? " is-locked" : ""
-                        }${
+                        }${isUnavailable ? " is-unavailable" : ""}${
                           suggestedDisciplineId === discipline.id
                             ? " is-suggested"
                             : ""
@@ -2016,7 +2233,7 @@ export default function Home() {
                             className="schedule-checkbox"
                             type="checkbox"
                             checked={isSelected}
-                            disabled={isCompleted || isLocked}
+                            disabled={isCompleted || isLocked || isUnavailable}
                             onChange={() => toggleDiscipline(discipline.id)}
                           />
                           <span className="check-visual" aria-hidden="true">
@@ -2027,6 +2244,11 @@ export default function Home() {
                               {discipline.name}
                               {isElective && (
                                 <em className="elective-badge">Optativa</em>
+                              )}
+                              {isUnavailable && (
+                                <em className="unavailable-badge">
+                                  Indisponível
+                                </em>
                               )}
                             </strong>
                             <span>
@@ -2042,7 +2264,9 @@ export default function Home() {
                                   : discipline.room)}
                             </span>
                             <small>
-                              {selectedOffering
+                              {isUnavailable
+                                ? "Sem horários no quadro de turmas 2026.2"
+                                : selectedOffering
                                 ? formatTimes(selectedOffering.times)
                                 : hasMultipleOfferings
                                   ? "Professor e horário serão escolhidos na próxima etapa"
@@ -2059,30 +2283,32 @@ export default function Home() {
                             Trocar professor ou turma
                           </button>
                         )}
-                        <div className="priority-control">
-                          <label htmlFor={`priority-${discipline.id}`}>
-                            <span>Prioridade</span>
-                            <select
-                              id={`priority-${discipline.id}`}
-                              value={
-                                coursePriorities[discipline.id] ??
-                                defaultCoursePriority
-                              }
-                              onChange={(event) =>
-                                updateCoursePriority(
-                                  discipline.id,
-                                  Number(event.target.value) as CoursePriority,
-                                )
-                              }
-                            >
-                              {priorityOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
+                        {isPriorityEditing && (
+                          <div className="priority-control">
+                            <label htmlFor={`priority-${discipline.id}`}>
+                              <span>Prioridade</span>
+                              <select
+                                id={`priority-${discipline.id}`}
+                                value={
+                                  coursePriorities[discipline.id] ??
+                                  getDefaultCoursePriority(discipline)
+                                }
+                                onChange={(event) =>
+                                  updateCoursePriority(
+                                    discipline.id,
+                                    Number(event.target.value) as CoursePriority,
+                                  )
+                                }
+                              >
+                                {priorityOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        )}
                         <div className="prerequisite-row">
                           <label className="completed-check">
                             <input
@@ -2095,6 +2321,10 @@ export default function Home() {
                           {isCompleted ? (
                             <span className="status-pill status-completed">
                               Concluída
+                            </span>
+                          ) : isUnavailable ? (
+                            <span className="status-pill status-unavailable">
+                              Não ofertada neste semestre
                             </span>
                           ) : isLocked ? (
                             <span
@@ -2130,6 +2360,8 @@ export default function Home() {
                 <strong>
                   {catalogTab === "completed"
                     ? "Nenhuma disciplina concluída"
+                    : catalogTab === "unavailable"
+                      ? "Nenhuma optativa indisponível"
                     : catalogTab === "conflict-free"
                       ? "Nenhuma matéria encaixa na grade"
                       : "Nenhuma disciplina liberada"}
@@ -2137,6 +2369,8 @@ export default function Home() {
                 <p>
                   {catalogTab === "completed"
                     ? "Marque “Já paguei” nas matérias concluídas para vê-las aqui."
+                    : catalogTab === "unavailable"
+                      ? "As optativas curriculares sem oferta aparecerão aqui."
                     : catalogTab === "conflict-free"
                       ? "Remova ou troque alguma turma selecionada para abrir novos horários."
                       : "Marque as matérias já pagas para liberar novos pré-requisitos."}

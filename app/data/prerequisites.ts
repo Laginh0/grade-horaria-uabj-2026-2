@@ -1,4 +1,5 @@
 export const prerequisiteIds: Record<string, string[]> = {
+  "algebra-linear": ["geometria-analitica"],
   "matematica-discreta-2": ["matematica-discreta-1"],
   "calculo-2": ["calculo-1"],
   "fisica-2": ["fisica-1"],
@@ -37,6 +38,14 @@ export const prerequisiteIds: Record<string, string[]> = {
   "paradigmas-programacao": ["programacao-2"],
   "principios-comunicacao": ["sinais-sistemas"],
   servomecanismos: ["sinais-sistemas"],
+  "calculo-4": ["calculo-3"],
+  "circuitos-eletricos-2": ["circuitos-eletricos-1"],
+  "complementos-matematica": ["calculo-3"],
+  "eletronica-2": ["eletronica-1"],
+  "fisica-4": ["fisica-3"],
+  "processamento-digital-sinais": ["sistemas-digitais"],
+  "prototipacao-circuitos-digitais": ["sistemas-digitais"],
+  "sistemas-probabilisticos": ["estatistica-probabilidade", "sinais-sistemas"],
 };
 
 export const prerequisiteNotes: Record<string, string> = {
