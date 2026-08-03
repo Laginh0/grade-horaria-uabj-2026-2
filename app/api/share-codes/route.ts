@@ -35,7 +35,7 @@ const normalizeIds = (value: unknown) => {
         typeof id === "string" && /^[a-z0-9-]{1,80}$/.test(id),
     )
     .sort()
-    .slice(0, 120);
+    .slice(0, 220);
 };
 
 const normalizePriorities = (value: unknown) => {
@@ -50,7 +50,7 @@ const normalizePriorities = (value: unknown) => {
           Number(priority) <= 5,
       )
       .sort(([first], [second]) => first.localeCompare(second))
-      .slice(0, 120),
+      .slice(0, 220),
   ) as Record<string, number>;
 };
 

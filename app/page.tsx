@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { prerequisiteIds, prerequisiteNotes } from "./data/prerequisites";
+import scheduleCoursesData from "./data/schedule-courses.json";
 
 type ClassTime = {
   day: number;
@@ -17,6 +18,13 @@ type CourseOffering = {
   room: string;
   label?: string;
   times: ClassTime[];
+};
+
+type ScheduledCourseData = {
+  id: string;
+  name: string;
+  offerings: Array<CourseOffering & { sourcePages: number[] }>;
+  sourcePages: number[];
 };
 
 type Discipline = {
@@ -812,6 +820,14 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
     times: [t(3, 14, 16), t(4, 14, 16)],
   },
   {
+    id: "informatica-sociedade",
+    period: "8º período",
+    name: "Informática e Sociedade",
+    professor: "Michael Oliveira da Cruz",
+    room: "AEB (sala não informada)",
+    times: [t(3, 10, 12), t(4, 10, 12)],
+  },
+  {
     id: "co-desenvolvimento-hw-sw",
     period: "9º período",
     name: "Projeto de Co-Desenvolvimento HW/SW",
@@ -1037,10 +1053,66 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
   },
 ];
 
-const disciplines: Discipline[] = rawDisciplines.map((discipline, index) => ({
-  ...discipline,
-  color: Math.round((index * 137.508 + 204) % 360),
-}));
+const scheduledCourses = scheduleCoursesData as ScheduledCourseData[];
+const scheduledCoursesById = new Map(
+  scheduledCourses.map((course) => [course.id, course]),
+);
+const rawDisciplineIds = new Set(rawDisciplines.map((discipline) => discipline.id));
+
+const offeringForDisplay = (
+  offering: ScheduledCourseData["offerings"][number],
+): CourseOffering => ({
+  id: offering.id,
+  professor: offering.professor,
+  room: offering.room,
+  times: offering.times,
+});
+
+const mergedRawDisciplines: Omit<Discipline, "color">[] = [
+  ...rawDisciplines.map((discipline) => {
+    const scheduledCourse = scheduledCoursesById.get(discipline.id);
+    if (!scheduledCourse) return discipline;
+
+    const offerings = scheduledCourse.offerings.map(offeringForDisplay);
+    const firstOffering = offerings[0];
+    return {
+      ...discipline,
+      period:
+        discipline.availability === "unavailable"
+          ? "Optativas curriculares ofertadas"
+          : discipline.period,
+      name: scheduledCourse.name,
+      professor: firstOffering.professor,
+      room: firstOffering.room,
+      times: firstOffering.times,
+      offerings: offerings.length > 1 ? offerings : undefined,
+      availability: "offered" as const,
+    };
+  }),
+  ...scheduledCourses
+    .filter((course) => !rawDisciplineIds.has(course.id))
+    .map((course) => {
+      const offerings = course.offerings.map(offeringForDisplay);
+      const firstOffering = offerings[0];
+      return {
+        id: course.id,
+        period: "Optativas de outros cursos",
+        name: course.name,
+        professor: firstOffering.professor,
+        room: firstOffering.room,
+        times: firstOffering.times,
+        offerings: offerings.length > 1 ? offerings : undefined,
+        availability: "offered" as const,
+      };
+    }),
+];
+
+const disciplines: Discipline[] = mergedRawDisciplines.map(
+  (discipline, index) => ({
+    ...discipline,
+    color: Math.round((index * 137.508 + 204) % 360),
+  }),
+);
 
 const disciplinesById = new Map(
   disciplines.map((discipline) => [discipline.id, discipline]),
@@ -1062,6 +1134,8 @@ const periodOrder = [
   "Optativa 1",
   "Optativa 2",
   "Optativa 3",
+  "Optativas curriculares ofertadas",
+  "Optativas de outros cursos",
   "Optativas indisponíveis",
 ];
 
