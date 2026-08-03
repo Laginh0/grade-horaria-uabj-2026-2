@@ -766,6 +766,29 @@ select:focus-visible,
   background: rgba(255, 255, 255, 0.82);
 }
 
+.priority-suggestion-response {
+  display: grid;
+  gap: 6px;
+}
+
+.suggestion-dismiss-button {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #c4d2b4;
+  border-radius: 8px;
+  color: #536547;
+  background: rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.suggestion-dismiss-button:hover {
+  border-color: #8fa876;
+  color: #314825;
+  background: #ffffff;
+}
+
 .suggestion-star {
   display: grid;
   flex: 0 0 24px;
@@ -1995,6 +2018,18 @@ select:focus-visible,
 :root[data-theme="dark"] .priority-suggestion-result {
   color: #c6d3bc;
   background: #101c13;
+}
+
+:root[data-theme="dark"] .suggestion-dismiss-button {
+  border-color: #42553a;
+  color: #b7c7a8;
+  background: rgba(14, 27, 17, 0.58);
+}
+
+:root[data-theme="dark"] .suggestion-dismiss-button:hover {
+  border-color: #688256;
+  color: #e2efd7;
+  background: #1c2d1d;
 }
 
 :root[data-theme="dark"] .suggestion-star {

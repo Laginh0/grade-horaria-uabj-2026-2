@@ -1226,6 +1226,9 @@ export default function Home() {
   const [suggestedDisciplineId, setSuggestedDisciplineId] = useState<
     string | null
   >(null);
+  const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<
+    Set<string>
+  >(new Set());
   const [suggestionAttempted, setSuggestionAttempted] = useState(false);
   const [isPriorityEditing, setIsPriorityEditing] = useState(false);
   const [pendingDisciplineId, setPendingDisciplineId] = useState<string | null>(
@@ -1628,6 +1631,23 @@ export default function Home() {
     ],
   );
 
+  const rankedSuggestionCandidates = useMemo(
+    () =>
+      disciplines
+        .filter((discipline) => conflictFreeIds.has(discipline.id))
+        .sort((first, second) => {
+          const priorityDifference =
+            (coursePriorities[second.id] ?? getDefaultCoursePriority(second)) -
+            (coursePriorities[first.id] ?? getDefaultCoursePriority(first));
+          if (priorityDifference !== 0) return priorityDifference;
+          const periodDifference =
+            periodOrder.indexOf(first.period) - periodOrder.indexOf(second.period);
+          if (periodDifference !== 0) return periodDifference;
+          return first.name.localeCompare(second.name, "pt-BR");
+        }),
+    [conflictFreeIds, coursePriorities],
+  );
+
   const suggestedDiscipline = useMemo(
     () =>
       disciplines.find(
@@ -1676,19 +1696,28 @@ export default function Home() {
 
   const suggestDisciplineByPriority = () => {
     setSuggestionAttempted(true);
-    const [suggestion] = disciplines
-      .filter((discipline) => conflictFreeIds.has(discipline.id))
-      .sort((first, second) => {
-        const priorityDifference =
-          (coursePriorities[second.id] ?? getDefaultCoursePriority(second)) -
-          (coursePriorities[first.id] ?? getDefaultCoursePriority(first));
-        if (priorityDifference !== 0) return priorityDifference;
-        const periodDifference =
-          periodOrder.indexOf(first.period) - periodOrder.indexOf(second.period);
-        if (periodDifference !== 0) return periodDifference;
-        return first.name.localeCompare(second.name, "pt-BR");
-      });
+    setDismissedSuggestionIds(new Set());
+    const [suggestion] = rankedSuggestionCandidates;
     setSuggestedDisciplineId(suggestion?.id ?? null);
+  };
+
+  const dismissAndSuggestAnother = () => {
+    setSuggestionAttempted(true);
+    const nextDismissedIds = new Set(dismissedSuggestionIds);
+    if (suggestedDisciplineId) {
+      nextDismissedIds.add(suggestedDisciplineId);
+    }
+
+    let nextSuggestion = rankedSuggestionCandidates.find(
+      (discipline) => !nextDismissedIds.has(discipline.id),
+    );
+    if (!nextSuggestion && rankedSuggestionCandidates.length > 0) {
+      nextDismissedIds.clear();
+      [nextSuggestion] = rankedSuggestionCandidates;
+    }
+
+    setDismissedSuggestionIds(nextDismissedIds);
+    setSuggestedDisciplineId(nextSuggestion?.id ?? null);
   };
 
   const toggleDiscipline = (id: string) => {
@@ -1794,6 +1823,7 @@ export default function Home() {
     setSelectedOfferingIds(restoredOfferings);
     setCoursePriorities(restoredPriorities);
     setSuggestedDisciplineId(null);
+    setDismissedSuggestionIds(new Set());
     setSuggestionAttempted(false);
     if (
       parsed.catalogTab === "all" ||
@@ -2281,28 +2311,37 @@ export default function Home() {
               </div>
             </div>
             {suggestedDiscipline ? (
-              <div
-                className="priority-suggestion-result"
-                role="status"
-                aria-live="polite"
-              >
-                <span className="suggestion-star" aria-hidden="true">
-                  ★
-                </span>
-                <div>
-                  <strong>{suggestedDiscipline.name}</strong>
-                  <span>
-                    Prioridade {suggestedPriority} ·{" "}
-                    {priorityNames[suggestedPriority]}
+              <div className="priority-suggestion-response">
+                <div
+                  className="priority-suggestion-result"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="suggestion-star" aria-hidden="true">
+                    ★
                   </span>
-                  <small>
-                    {suggestedProfessor} · {formatTimes(suggestedTimes)}
-                  </small>
-                  <em>
-                    Pré-requisitos atendidos e uma turma encaixa na grade atual.
-                    Nada foi alterado.
-                  </em>
+                  <div>
+                    <strong>{suggestedDiscipline.name}</strong>
+                    <span>
+                      Prioridade {suggestedPriority} ·{" "}
+                      {priorityNames[suggestedPriority]}
+                    </span>
+                    <small>
+                      {suggestedProfessor} · {formatTimes(suggestedTimes)}
+                    </small>
+                    <em>
+                      Pré-requisitos atendidos e uma turma encaixa na grade
+                      atual. Nada foi alterado.
+                    </em>
+                  </div>
                 </div>
+                <button
+                  className="suggestion-dismiss-button"
+                  type="button"
+                  onClick={dismissAndSuggestAnother}
+                >
+                  Dispensar e sugerir outra
+                </button>
               </div>
             ) : (
               <p className="priority-suggestion-empty" role="status">

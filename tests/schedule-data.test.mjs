@@ -155,4 +155,7 @@ test("o site exibe somente as dezoito optativas escolhidas", () => {
   );
   assert.match(pageSource, /allowedElectiveIds\.has\(course\.id\)/);
   assert.match(pageSource, /placeholder="Buscar matéria, professor, sala ou código"/);
+  assert.match(pageSource, /const dismissAndSuggestAnother = \(\) =>/);
+  assert.match(pageSource, /nextDismissedIds\.add\(suggestedDisciplineId\)/);
+  assert.match(pageSource, /Dispensar e sugerir outra/);
 });
