@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import allowedElectivesData from "./data/allowed-electives.json";
 import { prerequisiteIds, prerequisiteNotes } from "./data/prerequisites";
 import scheduleCoursesData from "./data/schedule-courses.json";
 
@@ -27,8 +28,16 @@ type ScheduledCourseData = {
   sourcePages: number[];
 };
 
+type AllowedElectiveData = {
+  id: string;
+  code: string;
+  name: string;
+  professor?: string;
+};
+
 type Discipline = {
   id: string;
+  code?: string;
   period: string;
   name: string;
   professor: string;
@@ -1053,6 +1062,20 @@ const rawDisciplines: Omit<Discipline, "color">[] = [
   },
 ];
 
+const allowedElectives = allowedElectivesData as AllowedElectiveData[];
+const allowedElectivesById = new Map(
+  allowedElectives.map((elective) => [elective.id, elective]),
+);
+const allowedElectiveIds = new Set(
+  allowedElectives.map((elective) => elective.id),
+);
+const filteredRawDisciplines = rawDisciplines.filter(
+  (discipline) =>
+    allowedElectiveIds.has(discipline.id) ||
+    (!discipline.period.startsWith("Optativa") &&
+      discipline.availability !== "unavailable"),
+);
+
 const scheduledCourses = scheduleCoursesData as ScheduledCourseData[];
 const scheduledCoursesById = new Map(
   scheduledCourses.map((course) => [course.id, course]),
@@ -1060,28 +1083,33 @@ const scheduledCoursesById = new Map(
 const rawDisciplineIds = new Set(rawDisciplines.map((discipline) => discipline.id));
 
 const offeringForDisplay = (
+  courseId: string,
   offering: ScheduledCourseData["offerings"][number],
-): CourseOffering => ({
-  id: offering.id,
-  professor: offering.professor,
-  room: offering.room,
-  times: offering.times,
-});
+): CourseOffering => {
+  const elective = allowedElectivesById.get(courseId);
+  return {
+    id: offering.id,
+    professor: elective?.professor ?? offering.professor,
+    room: offering.room,
+    times: offering.times,
+  };
+};
 
 const mergedRawDisciplines: Omit<Discipline, "color">[] = [
-  ...rawDisciplines.map((discipline) => {
+  ...filteredRawDisciplines.map((discipline) => {
     const scheduledCourse = scheduledCoursesById.get(discipline.id);
     if (!scheduledCourse) return discipline;
 
-    const offerings = scheduledCourse.offerings.map(offeringForDisplay);
+    const elective = allowedElectivesById.get(discipline.id);
+    const offerings = scheduledCourse.offerings.map((offering) =>
+      offeringForDisplay(discipline.id, offering),
+    );
     const firstOffering = offerings[0];
     return {
       ...discipline,
-      period:
-        discipline.availability === "unavailable"
-          ? "Optativas curriculares ofertadas"
-          : discipline.period,
-      name: scheduledCourse.name,
+      code: elective?.code,
+      period: elective ? "Optativas" : discipline.period,
+      name: elective?.name ?? scheduledCourse.name,
       professor: firstOffering.professor,
       room: firstOffering.room,
       times: firstOffering.times,
@@ -1090,14 +1118,21 @@ const mergedRawDisciplines: Omit<Discipline, "color">[] = [
     };
   }),
   ...scheduledCourses
-    .filter((course) => !rawDisciplineIds.has(course.id))
+    .filter(
+      (course) =>
+        !rawDisciplineIds.has(course.id) && allowedElectiveIds.has(course.id),
+    )
     .map((course) => {
-      const offerings = course.offerings.map(offeringForDisplay);
+      const elective = allowedElectivesById.get(course.id)!;
+      const offerings = course.offerings.map((offering) =>
+        offeringForDisplay(course.id, offering),
+      );
       const firstOffering = offerings[0];
       return {
         id: course.id,
-        period: "Optativas de outros cursos",
-        name: course.name,
+        code: elective.code,
+        period: "Optativas",
+        name: elective.name,
         professor: firstOffering.professor,
         room: firstOffering.room,
         times: firstOffering.times,
@@ -1131,12 +1166,7 @@ const periodOrder = [
   "7º período",
   "8º período",
   "9º período",
-  "Optativa 1",
-  "Optativa 2",
-  "Optativa 3",
-  "Optativas curriculares ofertadas",
-  "Optativas de outros cursos",
-  "Optativas indisponíveis",
+  "Optativas",
 ];
 
 const curriculumPrioritiesByPeriod: Record<string, CoursePriority> = {
@@ -1151,31 +1181,11 @@ const curriculumPrioritiesByPeriod: Record<string, CoursePriority> = {
   "9º período": 1,
 };
 
-const curriculumElectiveIds = new Set([
-  "calculo-4",
-  "circuitos-eletricos-2",
-  "complementos-matematica",
-  "desenho-tecnico",
-  "economia-aplicada-engenharia",
-  "educacao-relacoes-etnicas-raciais",
-  "eletronica-2",
-  "empreendedorismo-inovacao",
-  "fisica-4",
-  "libras",
-  "metodos-gerenciais-manutencao",
-  "processamento-digital-sinais",
-  "prototipacao-circuitos-digitais",
-  "robotica-industrial",
-  "sistemas-probabilisticos",
-]);
-
 const getDefaultCoursePriority = (
   discipline: Discipline,
 ): CoursePriority => {
   if (discipline.availability === "unavailable") return 1;
-  if (discipline.period.startsWith("Optativa")) {
-    return curriculumElectiveIds.has(discipline.id) ? 3 : 2;
-  }
+  if (discipline.period === "Optativas") return 3;
   return (
     curriculumPrioritiesByPeriod[discipline.period] ?? fallbackCoursePriority
   );
@@ -1188,6 +1198,13 @@ const formatTimes = (times: ClassTime[]) =>
     .map((time) => `${shortDays[time.day]} ${time.start}–${time.end}h`)
     .join(" · ");
 
+const normalizeCatalogSearch = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+
 const getOffering = (discipline: Discipline, offeringId?: string) =>
   discipline.offerings?.find((offering) => offering.id === offeringId) ??
   discipline.offerings?.[0];
@@ -1199,6 +1216,7 @@ export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isThemeHydrated, setIsThemeHydrated] = useState(false);
   const [catalogTab, setCatalogTab] = useState<CatalogTab>("all");
+  const [catalogSearch, setCatalogSearch] = useState("");
   const [selectedOfferingIds, setSelectedOfferingIds] = useState<
     Record<string, string>
   >({});
@@ -1313,9 +1331,12 @@ export default function Home() {
           parsed.catalogTab === "completed" ||
           parsed.catalogTab === "eligible" ||
           parsed.catalogTab === "conflict-free" ||
-          parsed.catalogTab === "unavailable"
+          (parsed.catalogTab === "unavailable" &&
+            unavailableDisciplineCount > 0)
         ) {
           setCatalogTab(parsed.catalogTab);
+        } else if (parsed.catalogTab === "unavailable") {
+          setCatalogTab("all");
         }
       }
     } catch {
@@ -1544,12 +1565,38 @@ export default function Home() {
     return compatibleIds;
   }, [completedIds, events, selectedIds]);
 
+  const normalizedCatalogSearch = useMemo(
+    () => normalizeCatalogSearch(catalogSearch),
+    [catalogSearch],
+  );
+
   const visibleGroupedDisciplines = useMemo(
     () =>
       groupedDisciplines
         .map(({ period, items }) => ({
           period,
           items: items.filter((discipline) => {
+            const searchableText = normalizeCatalogSearch(
+              [
+                discipline.code,
+                discipline.id,
+                discipline.name,
+                discipline.professor,
+                discipline.room,
+                ...(discipline.offerings?.flatMap((offering) => [
+                  offering.professor,
+                  offering.room,
+                ]) ?? []),
+              ]
+                .filter(Boolean)
+                .join(" "),
+            );
+            if (
+              normalizedCatalogSearch &&
+              !searchableText.includes(normalizedCatalogSearch)
+            ) {
+              return false;
+            }
             if (catalogTab === "completed") {
               return completedIds.has(discipline.id);
             }
@@ -1572,7 +1619,13 @@ export default function Home() {
           }),
         }))
         .filter(({ items }) => items.length > 0),
-    [catalogTab, completedIds, conflictFreeIds, groupedDisciplines],
+    [
+      catalogTab,
+      completedIds,
+      conflictFreeIds,
+      groupedDisciplines,
+      normalizedCatalogSearch,
+    ],
   );
 
   const suggestedDiscipline = useMemo(
@@ -1747,9 +1800,12 @@ export default function Home() {
       parsed.catalogTab === "completed" ||
       parsed.catalogTab === "eligible" ||
       parsed.catalogTab === "conflict-free" ||
-      parsed.catalogTab === "unavailable"
+      (parsed.catalogTab === "unavailable" &&
+        unavailableDisciplineCount > 0)
     ) {
       setCatalogTab(parsed.catalogTab);
+    } else if (parsed.catalogTab === "unavailable") {
+      setCatalogTab("all");
     }
   };
 
@@ -2110,6 +2166,27 @@ export default function Home() {
             </p>
           )}
 
+          <div className="course-search" role="search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={catalogSearch}
+              placeholder="Buscar matéria, professor, sala ou código"
+              aria-label="Buscar matérias"
+              onChange={(event) => setCatalogSearch(event.target.value)}
+            />
+            {catalogSearch && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                title="Limpar busca"
+                onClick={() => setCatalogSearch("")}
+              >
+                ×
+              </button>
+            )}
+          </div>
+
           <div
             className="catalog-tabs"
             role="tablist"
@@ -2159,19 +2236,21 @@ export default function Home() {
             >
               Sem conflitos <span>{conflictFreeIds.size}</span>
             </button>
-            <button
-              id="tab-unavailable"
-              type="button"
-              role="tab"
-              aria-selected={catalogTab === "unavailable"}
-              aria-controls="discipline-tab-panel"
-              className={`tab-unavailable${
-                catalogTab === "unavailable" ? " is-active" : ""
-              }`}
-              onClick={() => setCatalogTab("unavailable")}
-            >
-              Indisponíveis <span>{unavailableDisciplineCount}</span>
-            </button>
+            {unavailableDisciplineCount > 0 && (
+              <button
+                id="tab-unavailable"
+                type="button"
+                role="tab"
+                aria-selected={catalogTab === "unavailable"}
+                aria-controls="discipline-tab-panel"
+                className={`tab-unavailable${
+                  catalogTab === "unavailable" ? " is-active" : ""
+                }`}
+                onClick={() => setCatalogTab("unavailable")}
+              >
+                Indisponíveis <span>{unavailableDisciplineCount}</span>
+              </button>
+            )}
           </div>
 
           <section
@@ -2316,6 +2395,11 @@ export default function Home() {
                           <span className="discipline-copy">
                             <strong>
                               {discipline.name}
+                              {discipline.code && (
+                                <em className="course-code">
+                                  {discipline.code}
+                                </em>
+                              )}
                               {isElective && (
                                 <em className="elective-badge">Optativa</em>
                               )}
@@ -2432,7 +2516,9 @@ export default function Home() {
             {visibleGroupedDisciplines.length === 0 && (
               <div className="tab-empty-state">
                 <strong>
-                  {catalogTab === "completed"
+                  {normalizedCatalogSearch
+                    ? "Nenhuma matéria encontrada"
+                    : catalogTab === "completed"
                     ? "Nenhuma disciplina concluída"
                     : catalogTab === "unavailable"
                       ? "Nenhuma optativa indisponível"
@@ -2441,7 +2527,9 @@ export default function Home() {
                       : "Nenhuma disciplina liberada"}
                 </strong>
                 <p>
-                  {catalogTab === "completed"
+                  {normalizedCatalogSearch
+                    ? "Tente outro nome, professor, sala ou código da disciplina."
+                    : catalogTab === "completed"
                     ? "Marque “Já paguei” nas matérias concluídas para vê-las aqui."
                     : catalogTab === "unavailable"
                       ? "As optativas curriculares sem oferta aparecerão aqui."

@@ -573,6 +573,67 @@ select:focus-visible,
   box-shadow: 0 0 0 3px rgba(88, 164, 111, 0.13);
 }
 
+.course-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 10px 10px 0;
+}
+
+.course-search > span {
+  position: absolute;
+  left: 11px;
+  z-index: 1;
+  color: #71808e;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.course-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 36px 10px 34px;
+  border: 1px solid #d5dde5;
+  border-radius: 11px;
+  outline: none;
+  color: #213548;
+  background: #ffffff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.course-search input::placeholder {
+  color: #87939f;
+}
+
+.course-search:focus-within input {
+  border-color: #78965d;
+  box-shadow: 0 0 0 3px rgba(95, 132, 59, 0.12);
+}
+
+.course-search button {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: #687887;
+  background: transparent;
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.course-search button:hover {
+  color: #253b4e;
+  background: #eef2f5;
+}
+
 .catalog-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1046,6 +1107,17 @@ select:focus-visible,
   color: #1b2b3c;
   font-size: 13px;
   line-height: 1.28;
+}
+
+.course-code {
+  display: inline-flex;
+  margin-left: 6px;
+  color: #72808d;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
 }
 
 .elective-badge {
@@ -1823,6 +1895,35 @@ select:focus-visible,
 :root[data-theme="dark"] .elective-badge {
   color: #f2d88d;
   background: #493c1e;
+}
+
+:root[data-theme="dark"] .course-search input {
+  border-color: #314452;
+  color: #e5edf4;
+  background: #101d27;
+}
+
+:root[data-theme="dark"] .course-search input::placeholder,
+:root[data-theme="dark"] .course-search > span {
+  color: #8293a1;
+}
+
+:root[data-theme="dark"] .course-search:focus-within input {
+  border-color: #708e54;
+  box-shadow: 0 0 0 3px rgba(126, 158, 87, 0.14);
+}
+
+:root[data-theme="dark"] .course-search button {
+  color: #9cacb9;
+}
+
+:root[data-theme="dark"] .course-search button:hover {
+  color: #eef4f8;
+  background: #21313e;
+}
+
+:root[data-theme="dark"] .course-code {
+  color: #91a1ae;
 }
 
 :root[data-theme="dark"] .unavailable-badge {

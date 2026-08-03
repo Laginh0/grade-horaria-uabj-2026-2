@@ -1,0 +1,20 @@
+[
+  { "id": "calculo-4", "code": "UAB00004", "name": "Cálculo Diferencial e Integral 4" },
+  { "id": "desenho-tecnico", "code": "UAB00005", "name": "Desenho Técnico", "professor": "Heronilton Mendes de Lira" },
+  { "id": "empreendedorismo-inovacao", "code": "UAB00020", "name": "Empreendedorismo e Inovação Tecnológica", "professor": "Luciano Galvão Freire Junior" },
+  { "id": "mecanica-geral", "code": "UAB00024", "name": "Mecânica Geral", "professor": "Railson de Medeiros Nóbrega Alves" },
+  { "id": "fisica-4", "code": "UAB00107", "name": "Física Geral 4" },
+  { "id": "circuitos-eletricos-2", "code": "UAB00109", "name": "Circuitos Elétricos 2" },
+  { "id": "controladores-logicos-programaveis", "code": "UAB00110", "name": "Controladores Lógicos Programáveis", "professor": "André Luís Silva Barbosa" },
+  { "id": "eletronica-2", "code": "UAB00111", "name": "Eletrônica 2" },
+  { "id": "eletronica-de-potencia", "code": "UAB00112", "name": "Eletrônica de Potência", "professor": "Ailton do Egito Dutra" },
+  { "id": "sistemas-de-controle", "code": "UAB00116", "name": "Sistemas de Controle", "professor": "Moisés Tavares da Silva" },
+  { "id": "controle-digital", "code": "UAB00117", "name": "Controle Digital", "professor": "A definir docente" },
+  { "id": "maquinas-eletricas", "code": "UAB00119", "name": "Máquinas Elétricas", "professor": "Ailton do Egito Dutra" },
+  { "id": "controle-inteligente", "code": "UAB00121", "name": "Controle Inteligente", "professor": "Egydio Tadeu Gomes Ramos" },
+  { "id": "acionamento-de-equipamentos-eletricos", "code": "UAB00122", "name": "Acionamento de Equipamentos Elétricos", "professor": "Bruna Seibel Gehrke" },
+  { "id": "sistemas-supervisorios", "code": "UAB00124", "name": "Sistemas Supervisórios", "professor": "Egydio Tadeu Gomes Ramos" },
+  { "id": "complementos-matematica", "code": "UAB00168", "name": "Complementos de Matemática" },
+  { "id": "educacao-relacoes-etnicas-raciais", "code": "UAB00169", "name": "Educação das Relações Étnico-Raciais", "professor": "Sabi Yari Moise Bandiri" },
+  { "id": "matematica-elementar", "code": "UAB00197", "name": "Matemática Elementar", "professor": "Ranieri de França Freire" }
+]

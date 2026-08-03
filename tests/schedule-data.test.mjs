@@ -3,20 +3,37 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const schedulePath = new URL("../app/data/schedule-courses.json", import.meta.url);
+const allowedElectivesPath = new URL(
+  "../app/data/allowed-electives.json",
+  import.meta.url,
+);
 const pagePath = new URL("../app/page.tsx", import.meta.url);
 const schedule = JSON.parse(await readFile(schedulePath, "utf8"));
+const allowedElectives = JSON.parse(
+  await readFile(allowedElectivesPath, "utf8"),
+);
 const pageSource = await readFile(pagePath, "utf8");
 
-const unavailableCurriculumIds = [
-  "economia-aplicada-engenharia",
-  "libras",
-  "metodos-gerenciais-manutencao",
-  "processamento-digital-sinais",
-  "prototipacao-circuitos-digitais",
-  "robotica-industrial",
-  "sistemas-probabilisticos",
+const expectedElectiveIds = [
+  "acionamento-de-equipamentos-eletricos",
+  "calculo-4",
+  "circuitos-eletricos-2",
+  "complementos-matematica",
+  "controladores-logicos-programaveis",
+  "controle-digital",
+  "controle-inteligente",
+  "desenho-tecnico",
+  "educacao-relacoes-etnicas-raciais",
+  "eletronica-2",
+  "eletronica-de-potencia",
+  "empreendedorismo-inovacao",
+  "fisica-4",
+  "maquinas-eletricas",
+  "matematica-elementar",
+  "mecanica-geral",
+  "sistemas-de-controle",
+  "sistemas-supervisorios",
 ];
-const enrollmentOnlyIds = ["informatica-sociedade"];
 
 test("o catálogo extraído cobre todas as páginas com turmas", () => {
   assert.equal(schedule.length, 142);
@@ -102,24 +119,40 @@ test("Física 4 e optativas curriculares ofertadas foram recuperadas", () => {
   assert.equal(byId.get("fisica-3").name, "Física 3");
 });
 
-test("a mesclagem do site adiciona tudo e mantém só sete indisponíveis", () => {
+test("o site exibe somente as dezoito optativas escolhidas", () => {
   const rawBlock = pageSource.slice(
     pageSource.indexOf("const rawDisciplines"),
     pageSource.indexOf("const scheduledCourses ="),
   );
-  const rawIds = [...rawBlock.matchAll(/^    id:\s*"([^"]+)"/gm)].map(
-    (match) => match[1],
-  );
+  const rawEntries = [
+    ...rawBlock.matchAll(
+      /^  \{\r?\n    id:\s*"([^"]+)",([\s\S]*?)(?=^  \{|\r?\n\];)/gm,
+    ),
+  ].map((match) => ({
+    id: match[1],
+    period: match[2].match(/^    period:\s*"([^"]+)"/m)?.[1] ?? "",
+    unavailable: match[2].includes('availability: "unavailable"'),
+  }));
   const scheduledIds = new Set(schedule.map((course) => course.id));
-  const missingFromSchedule = rawIds
-    .filter((id) => !scheduledIds.has(id))
-    .sort();
+  const electiveIds = allowedElectives.map((elective) => elective.id).sort();
+  const electiveCodes = allowedElectives.map((elective) => elective.code);
+  const coreDisciplineCount = rawEntries.filter(
+    (discipline) =>
+      !discipline.period.startsWith("Optativa") && !discipline.unavailable,
+  ).length;
 
-  assert.equal(rawIds.length, 74);
-  assert.deepEqual(
-    missingFromSchedule,
-    [...unavailableCurriculumIds, ...enrollmentOnlyIds].sort(),
+  assert.equal(rawEntries.length, 74);
+  assert.equal(allowedElectives.length, 18);
+  assert.deepEqual(electiveIds, expectedElectiveIds);
+  assert.equal(new Set(electiveCodes).size, 18);
+  assert.ok(allowedElectives.every((elective) => scheduledIds.has(elective.id)));
+  assert.equal(coreDisciplineCount, 52);
+  assert.equal(coreDisciplineCount + allowedElectives.length, 70);
+  assert.equal(
+    allowedElectives.find((elective) => elective.id === "controle-digital")
+      .professor,
+    "A definir docente",
   );
-  assert.equal(new Set([...rawIds, ...scheduledIds]).size, 150);
-  assert.match(pageSource, /id: "informatica-sociedade"[\s\S]*?Michael Oliveira da Cruz/);
+  assert.match(pageSource, /allowedElectiveIds\.has\(course\.id\)/);
+  assert.match(pageSource, /placeholder="Buscar matéria, professor, sala ou código"/);
 });
