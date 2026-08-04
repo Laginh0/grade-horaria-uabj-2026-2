@@ -158,4 +158,8 @@ test("o site exibe somente as dezoito optativas escolhidas", () => {
   assert.match(pageSource, /const dismissAndSuggestAnother = \(\) =>/);
   assert.match(pageSource, /nextDismissedIds\.add\(suggestedDisciplineId\)/);
   assert.match(pageSource, /Dispensar e sugerir outra/);
+  assert.match(pageSource, /const addDisciplineFromPriority = \(id: string\) =>/);
+  assert.match(pageSource, /className="priority-schedule-preview"/);
+  assert.match(pageSource, /Escolher turma e adicionar/);
+  assert.match(pageSource, /pendingConflictFreeOnly/);
 });

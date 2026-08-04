@@ -1055,6 +1055,89 @@ select:focus-visible,
   font-weight: 800;
 }
 
+.discipline-card.is-priority-mode:focus-visible {
+  outline: 3px solid rgba(93, 157, 245, 0.55);
+  outline-offset: 2px;
+}
+
+.priority-schedule-preview {
+  display: none;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 10px;
+  border: 1px solid #d6e0ca;
+  border-radius: 9px;
+  background: #f7faF3;
+}
+
+.discipline-card.is-priority-mode:hover .priority-schedule-preview,
+.discipline-card.is-priority-mode:focus-within .priority-schedule-preview {
+  display: grid;
+}
+
+.priority-preview-label {
+  color: #536846;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.priority-preview-offerings {
+  display: grid;
+  gap: 6px;
+}
+
+.priority-preview-offerings > div {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  color: #536375;
+  background: #ffffff;
+}
+
+.priority-preview-offerings strong {
+  color: #293d4e;
+  font-size: 9px;
+}
+
+.priority-preview-offerings span,
+.priority-preview-offerings small {
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.priority-preview-offerings small {
+  color: #71808d;
+}
+
+.priority-add-button {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #5d812b;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #587a29;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.priority-add-button:hover {
+  background: #45651e;
+}
+
+.priority-add-blocked {
+  padding: 7px 8px;
+  border-radius: 7px;
+  color: #7a5960;
+  background: #f5e9eb;
+  font-size: 8px;
+  font-weight: 850;
+  text-align: center;
+}
+
 .prerequisite-row {
   display: flex;
   align-items: flex-start;
@@ -2163,6 +2246,33 @@ select:focus-visible,
   border-color: #405261;
   color: #d7e0e8;
   background: #0d1821;
+}
+
+:root[data-theme="dark"] .priority-schedule-preview {
+  border-color: #3d5037;
+  background: #152117;
+}
+
+:root[data-theme="dark"] .priority-preview-label {
+  color: #afc49b;
+}
+
+:root[data-theme="dark"] .priority-preview-offerings > div {
+  color: #b4c1cc;
+  background: #0e1a23;
+}
+
+:root[data-theme="dark"] .priority-preview-offerings strong {
+  color: #e1e9ef;
+}
+
+:root[data-theme="dark"] .priority-preview-offerings small {
+  color: #92a2af;
+}
+
+:root[data-theme="dark"] .priority-add-blocked {
+  color: #e4b9bf;
+  background: #3f2529;
 }
 
 :root[data-theme="dark"] .status-pill {

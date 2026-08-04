@@ -1234,6 +1234,7 @@ export default function Home() {
   const [pendingDisciplineId, setPendingDisciplineId] = useState<string | null>(
     null,
   );
+  const [pendingConflictFreeOnly, setPendingConflictFreeOnly] = useState(false);
   const [autosaveStatus, setAutosaveStatus] = useState("Autosave ativo");
   const [fileMessage, setFileMessage] = useState("");
   const [cloudCodeInput, setCloudCodeInput] = useState("");
@@ -1421,7 +1422,10 @@ export default function Home() {
   useEffect(() => {
     if (!pendingDisciplineId) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPendingDisciplineId(null);
+      if (event.key === "Escape") {
+        setPendingDisciplineId(null);
+        setPendingConflictFreeOnly(false);
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
@@ -1742,6 +1746,7 @@ export default function Home() {
       return;
     }
     if ((discipline.offerings?.length ?? 0) > 1) {
+      setPendingConflictFreeOnly(false);
       setPendingDisciplineId(id);
       return;
     }
@@ -1752,6 +1757,17 @@ export default function Home() {
     });
   };
 
+  const addDisciplineFromPriority = (id: string) => {
+    const discipline = disciplinesById.get(id);
+    if (!discipline || !conflictFreeIds.has(id)) return;
+    if ((discipline.offerings?.length ?? 0) > 1) {
+      setPendingConflictFreeOnly(true);
+      setPendingDisciplineId(id);
+      return;
+    }
+    setSelectedIds((current) => new Set(current).add(id));
+  };
+
   const chooseOffering = (disciplineId: string, offeringId: string) => {
     setSelectedOfferingIds((current) => ({
       ...current,
@@ -1759,6 +1775,7 @@ export default function Home() {
     }));
     setSelectedIds((current) => new Set(current).add(disciplineId));
     setPendingDisciplineId(null);
+    setPendingConflictFreeOnly(false);
   };
 
   const toggleCompleted = (id: string) => {
@@ -2392,6 +2409,26 @@ export default function Home() {
                       ) ?? [discipline.professor],
                     ).size;
                     const isElective = discipline.period.startsWith("Optativa");
+                    const priorityPreviewOfferings = discipline.offerings ?? [
+                      {
+                        id: `${discipline.id}-preview`,
+                        professor: discipline.professor,
+                        room: discipline.room,
+                        times: discipline.times,
+                      },
+                    ];
+                    const canAddFromPriority = conflictFreeIds.has(
+                      discipline.id,
+                    );
+                    const priorityBlockedReason = isSelected
+                      ? "Já está na grade"
+                      : isCompleted
+                        ? "Matéria já concluída"
+                        : isUnavailable
+                          ? "Sem turma disponível"
+                          : isLocked
+                            ? "Pré-requisitos pendentes"
+                            : "Conflita com a grade atual";
                     const prerequisiteNames = prerequisites.map(
                       (prerequisiteId) =>
                         disciplines.find(
@@ -2411,11 +2448,14 @@ export default function Home() {
                         }${isCompleted ? " is-completed" : ""}${
                           isLocked ? " is-locked" : ""
                         }${isUnavailable ? " is-unavailable" : ""}${
+                          isPriorityEditing ? " is-priority-mode" : ""
+                        }${
                           suggestedDisciplineId === discipline.id
                             ? " is-suggested"
                             : ""
                         }`}
                         key={discipline.id}
+                        tabIndex={isPriorityEditing ? 0 : undefined}
                         style={
                           { "--hue": discipline.color } as React.CSSProperties
                         }
@@ -2475,7 +2515,10 @@ export default function Home() {
                           <button
                             className="change-offering-button"
                             type="button"
-                            onClick={() => setPendingDisciplineId(discipline.id)}
+                            onClick={() => {
+                              setPendingConflictFreeOnly(false);
+                              setPendingDisciplineId(discipline.id);
+                            }}
                           >
                             Trocar professor ou turma
                           </button>
@@ -2504,6 +2547,39 @@ export default function Home() {
                                 ))}
                               </select>
                             </label>
+                          </div>
+                        )}
+                        {isPriorityEditing && (
+                          <div className="priority-schedule-preview">
+                            <span className="priority-preview-label">
+                              Horários disponíveis
+                            </span>
+                            <div className="priority-preview-offerings">
+                              {priorityPreviewOfferings.map((offering) => (
+                                <div key={offering.id}>
+                                  <strong>{offering.professor}</strong>
+                                  <span>{formatTimes(offering.times)}</span>
+                                  <small>{offering.room}</small>
+                                </div>
+                              ))}
+                            </div>
+                            {canAddFromPriority ? (
+                              <button
+                                className="priority-add-button"
+                                type="button"
+                                onClick={() =>
+                                  addDisciplineFromPriority(discipline.id)
+                                }
+                              >
+                                {hasMultipleOfferings
+                                  ? "Escolher turma e adicionar"
+                                  : "Adicionar à grade"}
+                              </button>
+                            ) : (
+                              <small className="priority-add-blocked">
+                                {priorityBlockedReason}
+                              </small>
+                            )}
                           </div>
                         )}
                         <div className="prerequisite-row">
@@ -2722,6 +2798,7 @@ export default function Home() {
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               setPendingDisciplineId(null);
+              setPendingConflictFreeOnly(false);
             }
           }}
         >
@@ -2735,7 +2812,10 @@ export default function Home() {
               className="modal-close"
               type="button"
               aria-label="Fechar seleção de turma"
-              onClick={() => setPendingDisciplineId(null)}
+              onClick={() => {
+                setPendingDisciplineId(null);
+                setPendingConflictFreeOnly(false);
+              }}
             >
               ×
             </button>
@@ -2744,7 +2824,7 @@ export default function Home() {
             <p className="modal-description">
               Esta disciplina possui mais de um professor disponível. Escolha a
               turma que deseja adicionar à grade.
-              {catalogTab === "conflict-free" &&
+              {(catalogTab === "conflict-free" || pendingConflictFreeOnly) &&
                 " As opções que conflitam com sua grade estão desativadas."}
             </p>
             <div className="offering-options">
@@ -2761,7 +2841,9 @@ export default function Home() {
                   ),
                 );
                 const isDisabled =
-                  catalogTab === "conflict-free" && hasScheduleConflict;
+                  (catalogTab === "conflict-free" ||
+                    pendingConflictFreeOnly) &&
+                  hasScheduleConflict;
                 return (
                   <button
                     className={`offering-option${
